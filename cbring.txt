@@ -1,0 +1,67 @@
+-- LocalScript (inside StarterPlayerScripts)
+
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+-- Variables for controlling distance
+local distance = 10 -- Initial distance in studs
+local moveSpeed = 10 -- Speed at which players move towards the character
+
+-- Function to update the position and freeze the other players
+local function bringPlayersInFront()
+    -- Loop through all players in the game
+    for _, otherPlayer in pairs(game.Players:GetPlayers()) do
+        -- Skip if it's the local player
+        if otherPlayer == player then
+            continue
+        end
+
+        local otherCharacter = otherPlayer.Character
+        if otherCharacter and otherCharacter:FindFirstChild("HumanoidRootPart") then
+            local otherHumanoidRootPart = otherCharacter.HumanoidRootPart
+            
+            -- Calculate the desired position in front of the local player
+            local direction = (humanoidRootPart.CFrame.LookVector).unit
+            local targetPosition = humanoidRootPart.Position + direction * distance
+            
+            -- Move the other player toward the target position
+            otherHumanoidRootPart.CFrame = CFrame.new(targetPosition)
+            
+            -- Freeze the other player: Disable walking and make them non-collidable
+            local humanoid = otherCharacter:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid.WalkSpeed = 0 -- Disable walking
+                humanoid.PlatformStand = true -- Freeze the player in place
+            end
+
+            -- Make the character non-collidable
+            for _, part in pairs(otherCharacter:GetChildren()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false -- Disable collisions
+                end
+            end
+        end
+    end
+end
+
+-- Handle key inputs for changing distance
+local userInputService = game:GetService("UserInputService")
+
+userInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    
+    if input.UserInputType == Enum.UserInputType.Keyboard then
+        if input.KeyCode == Enum.KeyCode.E then
+            distance = distance - 1 -- Move closer
+        elseif input.KeyCode == Enum.KeyCode.Q then
+            distance = distance + 1 -- Move further away
+        end
+    end
+end)
+
+-- Main loop to keep bringing players in front
+while true do
+    bringPlayersInFront()
+    wait(0.1) -- Update every 0.1 seconds
+end
