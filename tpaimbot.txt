@@ -1,0 +1,89 @@
+-- Get services
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local Camera = workspace.CurrentCamera
+
+-- Function to get the closest player to the local player
+local function getClosest(cframe, teamCheck)
+    local ray = Ray.new(cframe.Position, cframe.LookVector).Unit
+    
+    local target = nil
+    local mag = math.huge
+    
+    -- Loop through all players in the game
+    for _, v in pairs(game.Players:GetPlayers()) do
+        -- Ensure the player has a valid character and is not the local player
+        if v.Character and v.Character:FindFirstChild("Head") and v.Character:FindFirstChild("Humanoid") and v.Character:FindFirstChild("HumanoidRootPart") and v ~= game.Players.LocalPlayer then
+            local humanoid = v.Character:FindFirstChild("Humanoid")
+            
+            -- Ensure the player is alive (health > 0)
+            if humanoid and humanoid.Health > 0 then
+                -- If teamCheck is true, filter out teammates
+                if (teamCheck and v.Team ~= game.Players.LocalPlayer.Team) or not teamCheck then
+                    -- Calculate the distance from the ray to the player's head
+                    local magBuf = (v.Character.Head.Position - ray:ClosestPoint(v.Character.Head.Position)).Magnitude
+                    
+                    -- If the player is closer than the current closest target, update the target
+                    if magBuf < mag then
+                        mag = magBuf
+                        target = v
+                    end
+                end
+            end
+        end
+    end
+    
+    return target
+end
+
+-- Function to teleport the local player behind a target player and face their head
+local function stickBehindAndFace(player, targetPlayer)
+    local targetCharacter = targetPlayer.Character
+    if targetCharacter then
+        local humanoidRootPart = targetCharacter:WaitForChild("HumanoidRootPart")
+        local targetHead = targetCharacter:WaitForChild("Head")
+        
+        -- Calculate the position 10 units behind the target player
+        local behindPosition = humanoidRootPart.Position - humanoidRootPart.CFrame.LookVector * 10
+        
+        -- Calculate the CFrame that faces the target player's head
+        local facingCFrame = CFrame.new(behindPosition, targetHead.Position)
+        
+        -- Teleport the local player's character to this position, facing the target's head
+        local myCharacter = player.Character
+        if myCharacter then
+            myCharacter:SetPrimaryPartCFrame(facingCFrame)
+        end
+
+        -- Lock the camera on the target's head
+        Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetHead.Position)
+    end
+end
+
+-- Function to switch the target if the current target's health is 0
+local function followAndTeleportOnHealthZero()
+    local currentTarget = nil
+
+    -- This will run every frame, ensuring smooth responsiveness
+    RunService.RenderStepped:Connect(function()
+        -- If there is a current target and their health is 0, find a new target
+        if currentTarget and currentTarget.Character and currentTarget.Character:FindFirstChild("Humanoid") then
+            if currentTarget.Character.Humanoid.Health <= 0 then
+                -- If the current target's health is 0, find the next closest target
+                currentTarget = getClosest(game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame, false)
+            end
+        else
+            -- If no target is selected, find the closest player
+            currentTarget = getClosest(game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame, false)
+        end
+        
+        -- If a valid target is found, teleport behind them and face their head
+        if currentTarget then
+            -- Teleport to the new target and face them
+            stickBehindAndFace(game.Players.LocalPlayer, currentTarget)
+        end
+    end)
+end
+
+-- Start the follow and teleport loop using RenderStepped
+followAndTeleportOnHealthZero()
