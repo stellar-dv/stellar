@@ -1,0 +1,52 @@
+-- Function to teleport a character behind a player
+local function teleportBehind(player, targetPlayer)
+    local targetCharacter = targetPlayer.Character
+    if targetCharacter then
+        local humanoidRootPart = targetCharacter:WaitForChild("HumanoidRootPart")
+        
+        -- Calculate the position behind the target player (5 units behind)
+        local behindPosition = humanoidRootPart.Position - humanoidRootPart.CFrame.LookVector * 5
+        
+        -- Teleport the script's character to the new position behind the target player
+        local myCharacter = player.Character
+        if myCharacter then
+            myCharacter:SetPrimaryPartCFrame(CFrame.new(behindPosition))
+        end
+    end
+end
+
+-- Function to continuously loop through players
+local function teleportLoop()
+    -- Infinite loop to teleport to each player in sequence
+    while true do
+        -- Always fetch the updated list of players
+        local players = game.Players:GetPlayers()
+
+        -- Loop through all players
+        for _, targetPlayer in ipairs(players) do
+            -- Wait for the player's character to be loaded or respawned after death
+            local character = targetPlayer.Character or targetPlayer.CharacterAdded:Wait()
+
+            -- Check if the character exists before attempting teleport
+            if character then
+                teleportBehind(game.Players.LocalPlayer, targetPlayer)  -- Teleport local player behind each player
+                wait(0.1)  -- Wait 0.1 seconds before switching to the next player (adjust this as needed)
+            end
+        end
+    end
+end
+
+-- Function to restart the teleport loop when the local player respawns
+local function startTeleportLoopOnRespawn()
+    -- Run teleportLoop when the player first spawns
+    teleportLoop()
+
+    -- Listen for when the local player dies and respawns
+    game.Players.LocalPlayer.CharacterAdded:Connect(function()
+        -- When the character respawns, restart the teleport loop
+        teleportLoop()
+    end)
+end
+
+-- Start the teleportation loop for the first time
+startTeleportLoopOnRespawn()
