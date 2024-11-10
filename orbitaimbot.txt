@@ -1,0 +1,106 @@
+-- Get services
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local Camera = workspace.CurrentCamera
+
+-- Function to get the closest player to the local player
+local function getClosest(cframe, teamCheck)
+    local ray = Ray.new(cframe.Position, cframe.LookVector).Unit
+    
+    local target = nil
+    local mag = math.huge
+    
+    -- Loop through all players in the game
+    for _, v in pairs(game.Players:GetPlayers()) do
+        -- Ensure the player has a valid character and is not the local player
+        if v.Character and v.Character:FindFirstChild("Head") and v.Character:FindFirstChild("Humanoid") and v.Character:FindFirstChild("HumanoidRootPart") and v ~= game.Players.LocalPlayer then
+            local humanoid = v.Character:FindFirstChild("Humanoid")
+            
+            -- Ensure the player is alive (health > 0)
+            if humanoid and humanoid.Health > 0 then
+                -- If teamCheck is true, filter out teammates
+                if (teamCheck and v.Team ~= game.Players.LocalPlayer.Team) or not teamCheck then
+                    -- Calculate the distance from the ray to the player's head
+                    local magBuf = (v.Character.Head.Position - ray:ClosestPoint(v.Character.Head.Position)).Magnitude
+                    
+                    -- If the player is closer than the current closest target, update the target
+                    if magBuf < mag then
+                        mag = magBuf
+                        target = v
+                    end
+                end
+            end
+        end
+    end
+    
+    return target
+end
+
+-- Function to make the player fly around the target while spinning vertically (like an aura)
+local function floatAroundAndSpin(player, targetPlayer)
+    local targetCharacter = targetPlayer.Character
+    if targetCharacter then
+        local humanoidRootPart = targetCharacter:WaitForChild("HumanoidRootPart")
+        local targetHead = targetCharacter:WaitForChild("Head")
+
+        -- Get the position of the target (around which we will orbit)
+        local targetPosition = humanoidRootPart.Position
+
+        -- Define parameters for the orbit and spin
+        local radius = 15  -- Radius of the circular orbit (how far away from the target)
+        local height = 5   -- Constant height to keep the player at (can adjust for more or less height)
+        local spinSpeed = 100  -- Speed of vertical spinning
+        local orbitSpeed = 20  -- Speed of orbit (how fast the player moves around the target)
+
+        -- Current time for orbit and spinning calculations
+        local time = tick()
+
+        -- Calculate the new position for the player in orbit (circle around the target)
+        local xOffset = math.cos(time * orbitSpeed) * radius
+        local zOffset = math.sin(time * orbitSpeed) * radius
+        local yOffset = height  -- Constant height to keep the player floating
+
+        -- Calculate the new position based on the target's position and the offsets
+        local newPosition = targetPosition + Vector3.new(xOffset, yOffset, zOffset)
+
+        -- Calculate the target CFrame for the player to fly around the target
+        local facingCFrame = CFrame.new(newPosition, targetHead.Position)
+
+        -- Set the player's position and CFrame
+        local myCharacter = player.Character
+        if myCharacter then
+            myCharacter:SetPrimaryPartCFrame(facingCFrame)
+        end
+
+        -- Lock the camera to focus on the target's head
+        Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetHead.Position)
+    end
+end
+
+-- Function to switch the target if the current target's health is 0
+local function followAndTeleportOnHealthZero()
+    local currentTarget = nil
+
+    -- This will run every frame, ensuring smooth responsiveness
+    RunService.RenderStepped:Connect(function()
+        -- If there is a current target and their health is 0, find a new target
+        if currentTarget and currentTarget.Character and currentTarget.Character:FindFirstChild("Humanoid") then
+            if currentTarget.Character.Humanoid.Health <= 0 then
+                -- If the current target's health is 0, find the next closest target
+                currentTarget = getClosest(game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame, false)
+            end
+        else
+            -- If no target is selected, find the closest player
+            currentTarget = getClosest(game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame, false)
+        end
+        
+        -- If a valid target is found, make the player float around the target and spin
+        if currentTarget then
+            -- Make the player float around the new target and spin vertically
+            floatAroundAndSpin(game.Players.LocalPlayer, currentTarget)
+        end
+    end)
+end
+
+-- Start the follow and teleport loop using RenderStepped
+followAndTeleportOnHealthZero()
