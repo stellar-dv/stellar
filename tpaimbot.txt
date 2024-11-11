@@ -5,10 +5,8 @@ local Camera = workspace.CurrentCamera
 
 -- Function to get the closest player to the local player
 local function getClosest(cframe, teamCheck)
-    local ray = Ray.new(cframe.Position, cframe.LookVector).Unit
-    
-    local target = nil
-    local mag = math.huge
+    local closestPlayer = nil
+    local closestDistance = math.huge
     
     -- Loop through all players in the game
     for _, v in pairs(game.Players:GetPlayers()) do
@@ -20,20 +18,20 @@ local function getClosest(cframe, teamCheck)
             if humanoid and humanoid.Health > 0 then
                 -- If teamCheck is true, filter out teammates
                 if (teamCheck and v.Team ~= game.Players.LocalPlayer.Team) or not teamCheck then
-                    -- Calculate the distance from the ray to the player's head
-                    local magBuf = (v.Character.Head.Position - ray:ClosestPoint(v.Character.Head.Position)).Magnitude
+                    -- Calculate the distance from the local player to the target player's head
+                    local distance = (v.Character.Head.Position - cframe.Position).Magnitude
                     
                     -- If the player is closer than the current closest target, update the target
-                    if magBuf < mag then
-                        mag = magBuf
-                        target = v
+                    if distance < closestDistance then
+                        closestDistance = distance
+                        closestPlayer = v
                     end
                 end
             end
         end
     end
     
-    return target
+    return closestPlayer
 end
 
 -- Function to teleport the local player behind a target player and face their head
@@ -70,11 +68,11 @@ local function followAndTeleportOnHealthZero()
         if currentTarget and currentTarget.Character and currentTarget.Character:FindFirstChild("Humanoid") then
             if currentTarget.Character.Humanoid.Health <= 0 then
                 -- If the current target's health is 0, find the next closest target
-                currentTarget = getClosest(game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame, false)
+                currentTarget = getClosest(game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame, true)  -- Set teamCheck to true to avoid teammates
             end
         else
             -- If no target is selected, find the closest player
-            currentTarget = getClosest(game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame, false)
+            currentTarget = getClosest(game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame, true)  -- Set teamCheck to true to avoid teammates
         end
         
         -- If a valid target is found, teleport behind them and face their head
