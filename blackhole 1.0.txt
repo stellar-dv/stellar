@@ -63,7 +63,7 @@ if not getgenv().Network then
     EnablePartControl()
 end
 
--- Function to apply stronger force to parts and remove unwanted behaviors.
+-- Function to apply force to parts and remove unwanted behaviors.
 local function ForcePart(v)
     if v:IsA("Part") and not v.Anchored and not v.Parent:FindFirstChild("Humanoid") and not v.Parent:FindFirstChild("Head") and v.Name ~= "Handle" then
         -- Clean up existing body movers
@@ -76,17 +76,17 @@ local function ForcePart(v)
         if v:FindFirstChild("Attachment") then
             v:FindFirstChild("Attachment"):Destroy()
         end
-        -- Apply stronger torque and alignment to the part
+        -- Apply torque and alignment to the part
         v.CanCollide = false
         
         local Torque = Instance.new("Torque", v)
-        Torque.Torque = Vector3.new(5000000, 5000000, 5000000)  -- Stronger torque
+        Torque.Torque = Vector3.new(1000000, 1000000, 1000000)
         local AlignPosition = Instance.new("AlignPosition", v)
         local Attachment2 = Instance.new("Attachment", v)
         Torque.Attachment0 = Attachment2
         AlignPosition.MaxForce = math.huge
         AlignPosition.MaxVelocity = math.huge
-        AlignPosition.Responsiveness = 1000  -- Faster responsiveness
+        AlignPosition.Responsiveness = 500
         AlignPosition.Attachment0 = Attachment2
         AlignPosition.Attachment1 = Attachment1
     end
@@ -97,4 +97,85 @@ local function toggleBlackHole()
     blackHoleActive = not blackHoleActive
     if blackHoleActive then
         -- Apply force to existing parts
-        for _, v in
+        for _, v in pairs(Workspace:GetDescendants()) do
+            ForcePart(v)
+        end
+
+        -- Handle newly added parts dynamically.
+        Workspace.DescendantAdded:Connect(function(v)
+            if blackHoleActive then
+                ForcePart(v)
+            end
+        end)
+
+        -- Gradually change the position of the black hole.
+        spawn(function()
+            while blackHoleActive and RunService.RenderStepped:Wait() do
+                angle = angle + math.rad(angleSpeed)
+
+                local offsetX = math.cos(angle) * radius
+                local offsetZ = math.sin(angle) * radius
+
+                -- Update black hole's attachment position around the player
+                Attachment1.WorldCFrame = humanoidRootPart.CFrame * CFrame.new(offsetX, 0, offsetZ)
+            end
+        end)
+    else
+        -- If black hole is deactivated, reset position
+        Attachment1.WorldCFrame = CFrame.new(0, -1000, 0)
+    end
+end
+
+-- Setup for when the player's character is reloaded.
+LocalPlayer.CharacterAdded:Connect(function()
+    Attachment1 = setupPlayer()
+    if blackHoleActive then
+        toggleBlackHole()
+    end
+end)
+
+-- Create a library for the GUI with rainbow hue transitions.
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/miroeramaa/TurtleLib/main/TurtleUiLib.lua"))()
+local window = library:Window("Stellar")
+
+-- Slider for controlling the radius of the black hole.
+window:Slider("Radius of Blackhole", 1, 100, 10, function(Value)
+    radius = Value
+end)
+
+-- Toggle button to enable/disable black hole.
+window:Toggle("Blackhole", true, function(Value)
+    if Value then
+        toggleBlackHole()
+    else
+        blackHoleActive = false
+    end
+end)
+
+-- Function to smoothly transition the UI color with a rainbow effect
+local function rainbowUIColor()
+    local hue = 0
+    while true do
+        -- Convert hue to RGB using HSV model (Hue changes over time)
+        local color = Color3.fromHSV(hue, 1, 1)
+        window:UpdateColor(color)  -- Update window color with new rainbow color
+        hue = (hue + 0.01) % 1  -- Increment hue for the next color
+        wait(0.1)  -- Wait to smooth the transition
+    end
+end
+
+-- Start rainbow color transition
+spawn(rainbowUIColor)
+
+-- Periodically update the angle in a separate loop.
+spawn(function()
+    while true do
+        RunService.RenderStepped:Wait()
+        if blackHoleActive then
+            angle = angle + math.rad(angleSpeed)
+        end
+    end
+end)
+
+-- Initial toggle of the black hole effect.
+toggleBlackHole()
