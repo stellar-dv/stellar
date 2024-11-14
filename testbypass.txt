@@ -1,17 +1,11 @@
 
 local GazerHa_Cooldown = 1
 
-
 if not game:IsLoaded() then
     game.IsLoaded:Wait()
 end
 
-
-
-    
-    
-    
-local guiName = "RobloxGUI"
+local guiName = "GazeGayUI9999"
 local coreGay = cloneref(game:GetService("CoreGui")) or game:GetService("CoreGui")
 
 
@@ -23,69 +17,14 @@ if not coreGay:FindFirstChild(guiName) then
     
     screenGui.Parent = coreGay
 
-    print("•   Stellar (v0.1) has been loaded")
+    print("•   StellarCHAT (v0.1) has loaded.")
 else
    
-    print("•   Strllar (v0.1) is already executed..")
+    print("•   StellarCHAT (v0.1) is already executed..")
     return
 end
 local StarterGui = cloneref(game:GetService("StarterGui")) or game:GetService("StarterGui")
 StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false)
-
-
-
-local function fadeTextLabel(labeltext)
-    local screenGui = Instance.new("ScreenGui")
-    local label = Instance.new("TextLabel") -- Corrected label variable name
-
-    -- Set up the ScreenGui and TextLabel properties
-    screenGui.Parent = cloneref(game:GetService("CoreGui")) or game:GetService("CoreGui")
-    label.Parent = screenGui
-    label.Size = UDim2.new(0.5, 0, 0.2, 0)  -- Adjust width and height
-    label.Position = UDim2.new(0.25, 0, 0.4, 0)  -- Center the label a bit better
-    label.BackgroundTransparency = 1
-    label.TextTransparency = 1  -- Start with transparent text
-    label.Text = labeltext
-    label.TextColor3 = Color3.fromRGB(255, 255, 255)  -- White color, lighter tone
-    label.TextScaled = true  -- Scales text according to size
-    label.Font = Enum.Font.GothamBold  -- Bold, modern font for better readability
-    label.TextStrokeTransparency = 0.8  -- Lighter stroke for better visibility
-    label.TextSize = 40  -- Adjust text size for better readability
-    label.TextAlign = Enum.TextAlign.Center  -- Ensure text is centered horizontally
-    label.TextYAlignment = Enum.TextYAlignment.Center  -- Ensure text is centered vertically
-
-    -- Define the fade duration
-    local fadeDuration = 3 -- Duration of fade effect
-
-    -- Get the TweenService
-    local tweenService = game:GetService("TweenService")
-
-    -- Fade In (Text transparency)
-    local fadeIn = tweenService:Create(label, TweenInfo.new(fadeDuration), {TextTransparency = 0})
-    fadeIn:Play()
-    fadeIn.Completed:Wait()
-
-    -- RGB Animation (Cycle through RGB colors)
-    local colorTweenInfo = TweenInfo.new(fadeDuration, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1, true)
-    local rgbTween = tweenService:Create(label, colorTweenInfo, {
-        TextColor3 = Color3.fromHSV(tick() % 10 / 10, 1, 1)  -- Cycles through RGB colors using HSV
-    })
-    rgbTween:Play()
-
-    -- Wait for the fade duration
-    task.wait(fadeDuration)
-
-    -- Fade Out (Text transparency)
-    local fadeOut = tweenService:Create(label, TweenInfo.new(fadeDuration), {TextTransparency = 1})
-    fadeOut:Play()
-    fadeOut.Completed:Wait()
-
-    screenGui:Destroy()  -- Clean up by destroying the ScreenGui
-end
-
--- Run fade effect
-fadeTextLabel("Loading StellarBypass v0.1")
-
 
 local function isEmoji(c)
     local code = utf8.codepoint(c)  
@@ -110,7 +49,7 @@ end
 local function modifyText(input)
 
 if not string.find(input, " ") then
-        input = ">" .. input
+        input = "" .. input
     end
     
 local replacements = {
@@ -138,10 +77,10 @@ local replacements = {
         Bitch = "•B•i•t•••c•h•",
         BITCH = "•B•I•T•••C•H•",
         nigga = "n•i•g•••g•a",
-        nigger = "n•i•••••g•••••g•e•r••",
+        nigger = "n•i•g•••g•e•r••",
         Nigga = "N•i•g•••g•a",
-        Nigger = "N•i•g•••••g•e•r••",
-        NIGGER = "N•I•G•••••G•E•R••",
+        Nigger = "N•i•g•••g•e•r••",
+        NIGGER = "N•I•G•••G•E•R••",
         NIGGAS = "N•I•G•••G•A•S••",
         NIGGA = "N•I•G•••G•A••",
         dick = "d••••••i••••c•k••",
