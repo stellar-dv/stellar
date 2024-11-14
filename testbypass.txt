@@ -1,14 +1,3 @@
---[[
-	WARNING: Heads up! This script has not been verified by ScriptBlox. Use at your own risk!
-]]
-local Gaze = [[
-Gaze Bypass Tutorial:
-"https://youtube.com/shorts/z1yCdkbXTi4?si=f1ol4wCL4jxW3jtP"
-]]
-
-everyClipboard = setclipboard or toclipboard or set_clipboard or (Clipboard and Clipboard.set)
-
-everyClipboard(tostring(Gaze))
 
 local GazerHa_Cooldown = 1
 
@@ -59,10 +48,10 @@ local function fadeTextLabel(labeltext)
     label.Text = labeltext
     label.TextColor3 = Color3.new(0, 1, 1)  -- Initial color (Aqua)
     label.TextScaled = true
-    label.Font = Enum.Font.GothamBlack -- Bold, modern font
+    label.Font = Enum.Font.Roboto -- Bold, modern font
 
     -- Define the fade duration
-    local fadeDuration = 1 -- Adjust to your preference
+    local fadeDuration = 3 -- Adjust to your preference
 
     -- Find or use TweenService
     local tweenService = game:GetService("TweenService")
@@ -144,10 +133,10 @@ local replacements = {
         Bitch = "•B•i•t•••c•h•",
         BITCH = "•B•I•T•••C•H•",
         nigga = "n•i•g•••g•a",
-        nigger = "n•i•g•••g•e•r••",
+        nigger = "n•i•g•••••g•e•r••",
         Nigga = "N•i•g•••g•a",
-        Nigger = "N•i•g•••g•e•r••",
-        NIGGER = "N•I•G•••G•E•R••",
+        Nigger = "N•i•g•••••g•e•r••",
+        NIGGER = "N•I•G•••••G•E•R••",
         NIGGAS = "N•I•G•••G•A•S••",
         NIGGA = "N•I•G•••G•A••",
         dick = "d••••••i••••c•k••",
