@@ -41,19 +41,23 @@ local function fadeTextLabel(labeltext)
     -- Set up the ScreenGui and TextLabel properties
     screenGui.Parent = cloneref(game:GetService("CoreGui")) or game:GetService("CoreGui")
     label.Parent = screenGui
-    label.Size = UDim2.new(0.5, 0, 0.2, 0)  
-    label.Position = UDim2.new(0.30, 0, 0.45, 0)  
+    label.Size = UDim2.new(0.5, 0, 0.2, 0)  -- Adjust width and height
+    label.Position = UDim2.new(0.25, 0, 0.4, 0)  -- Center the label a bit better
     label.BackgroundTransparency = 1
-    label.TextTransparency = 1
+    label.TextTransparency = 1  -- Start with transparent text
     label.Text = labeltext
-    label.TextColor3 = Color3.new(0, 1, 1)  -- Initial color (Aqua)
-    label.TextScaled = true
-    label.Font = Enum.Font.Roboto -- Bold, modern font
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)  -- White color, lighter tone
+    label.TextScaled = true  -- Scales text according to size
+    label.Font = Enum.Font.GothamBold  -- Bold, modern font for better readability
+    label.TextStrokeTransparency = 0.8  -- Lighter stroke for better visibility
+    label.TextSize = 40  -- Adjust text size for better readability
+    label.TextAlign = Enum.TextAlign.Center  -- Ensure text is centered horizontally
+    label.TextYAlignment = Enum.TextYAlignment.Center  -- Ensure text is centered vertically
 
     -- Define the fade duration
-    local fadeDuration = 3 -- Adjust to your preference
+    local fadeDuration = 3 -- Duration of fade effect
 
-    -- Find or use TweenService
+    -- Get the TweenService
     local tweenService = game:GetService("TweenService")
 
     -- Fade In (Text transparency)
@@ -68,6 +72,7 @@ local function fadeTextLabel(labeltext)
     })
     rgbTween:Play()
 
+    -- Wait for the fade duration
     task.wait(fadeDuration)
 
     -- Fade Out (Text transparency)
@@ -75,7 +80,7 @@ local function fadeTextLabel(labeltext)
     fadeOut:Play()
     fadeOut.Completed:Wait()
 
-    screenGui:Destroy()
+    screenGui:Destroy()  -- Clean up by destroying the ScreenGui
 end
 
 -- Run fade effect
@@ -133,7 +138,7 @@ local replacements = {
         Bitch = "•B•i•t•••c•h•",
         BITCH = "•B•I•T•••C•H•",
         nigga = "n•i•g•••g•a",
-        nigger = "n•i•g•••••g•e•r••",
+        nigger = "n•i•••••g•••••g•e•r••",
         Nigga = "N•i•g•••g•a",
         Nigger = "N•i•g•••••g•e•r••",
         NIGGER = "N•I•G•••••G•E•R••",
