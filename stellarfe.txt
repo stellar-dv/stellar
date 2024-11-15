@@ -208,6 +208,21 @@ Title.Size = UDim2.new(0, 250, 0, 20)
 Title.Font = Enum.Font.SourceSans
 Title.TextSize = 18
 Title.Text = "Stellar FE v" .. currentVersion
+local function updateRainbow()
+        local hue = 0
+        while true do
+            -- Change the color based on hue (hue value is between 0 and 1)
+            Title.TextColor3 = Color3.fromHSV(hue, 1, 1) 
+            hue = hue + 0.01 -- Increment hue to cycle through colors
+            if hue > 1 then
+                hue = 0 -- Reset hue to start from the beginning of the rainbow
+            end
+            wait(0.1) -- Delay to control speed of the color change
+        end
+    end
+
+    -- Start the rainbow color animation
+    spawn(updateRainbow)
 
 do
 	local emoji = ({
@@ -12415,29 +12430,46 @@ addcmd('removecmd',{'deletecmd'},function(args, speaker)
 end)
 
 if IsOnMobile then
-	local QuickCapture = Instance.new("TextButton")
-	local UICorner = Instance.new("UICorner")
-	QuickCapture.Name = randomString()
-	QuickCapture.Parent = PARENT
-	QuickCapture.BackgroundColor3 = Color3.fromRGB(46, 46, 47)
-	QuickCapture.BackgroundTransparency = 0.14
-	QuickCapture.Position = UDim2.new(0.489, 0, 0, 0)
-	QuickCapture.Size = UDim2.new(0, 32, 0, 33)
-	QuickCapture.Font = Enum.Font.SourceSansBold
-	QuickCapture.Text = "☆"
-	QuickCapture.TextColor3 = Color3.fromRGB(255, 255, 255)
-	QuickCapture.TextSize = 20.000
-	QuickCapture.TextWrapped = true
-	QuickCapture.Draggable = true
-	UICorner.Name = randomString()
-	UICorner.CornerRadius = UDim.new(0.5, 0)
-	UICorner.Parent = QuickCapture
-	QuickCapture.MouseButton1Click:Connect(function()
-		Cmdbar:CaptureFocus()
-		maximizeHolder()
-	end)
-	table.insert(shade1, QuickCapture)
-	table.insert(text1, QuickCapture)
+    local QuickCapture = Instance.new("TextButton")
+    local UICorner = Instance.new("UICorner")
+    QuickCapture.Name = randomString()
+    QuickCapture.Parent = PARENT
+    QuickCapture.BackgroundColor3 = Color3.fromRGB(46, 46, 47)
+    QuickCapture.BackgroundTransparency = 0.14
+    QuickCapture.Position = UDim2.new(0.489, 0, 0, 0)
+    QuickCapture.Size = UDim2.new(0, 32, 0, 33)
+    QuickCapture.Font = Enum.Font.SourceSansBold
+    QuickCapture.Text = "☆"
+    QuickCapture.TextColor3 = Color3.fromRGB(255, 255, 255)
+    QuickCapture.TextSize = 20.000
+    QuickCapture.TextWrapped = true
+    QuickCapture.Draggable = true
+    UICorner.Name = randomString()
+    UICorner.CornerRadius = UDim.new(0.5, 0)
+    UICorner.Parent = QuickCapture
+    QuickCapture.MouseButton1Click:Connect(function()
+        Cmdbar:CaptureFocus()
+        maximizeHolder()
+    end)
+    table.insert(shade1, QuickCapture)
+    table.insert(text1, QuickCapture)
+
+    -- Rainbow effect for the text
+    local function updateRainbow()
+        local hue = 0
+        while true do
+            -- Change the color based on hue (hue value is between 0 and 1)
+            QuickCapture.TextColor3 = Color3.fromHSV(hue, 1, 1) 
+            hue = hue + 0.01 -- Increment hue to cycle through colors
+            if hue > 1 then
+                hue = 0 -- Reset hue to start from the beginning of the rainbow
+            end
+            wait(0.1) -- Delay to control speed of the color change
+        end
+    end
+
+    -- Start the rainbow color animation
+    spawn(updateRainbow)
 end
 
 updateColors(currentShade1,shade1)
