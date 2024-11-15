@@ -2,6 +2,18 @@
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local Camera = workspace.CurrentCamera
+local UserInputService = game:GetService("UserInputService")
+local GuiService = game:GetService("GuiService")
+
+-- Variables for movable buttons
+local buttonSize = UDim2.new(0, 100, 0, 50)
+local buttonPositionLeft = UDim2.new(0, 10, 0.5, -25)  -- Left button
+local buttonPositionRight = UDim2.new(0, 120, 0.5, -25)  -- Right button
+
+local radius = 15  -- Initial radius
+local height = 5   -- Height for orbit
+local spinSpeed = 100  -- Speed of vertical spinning
+local orbitSpeed = 20  -- Speed of orbit (how fast the player moves around the target)
 
 -- Function to get the closest player to the local player
 local function getClosest(cframe, teamCheck)
@@ -45,12 +57,6 @@ local function floatAroundAndSpin(player, targetPlayer)
 
         -- Get the position of the target (around which we will orbit)
         local targetPosition = humanoidRootPart.Position
-
-        -- Define parameters for the orbit and spin
-        local radius = 15  -- Radius of the circular orbit (how far away from the target)
-        local height = 5   -- Constant height to keep the player at (can adjust for more or less height)
-        local spinSpeed = 100  -- Speed of vertical spinning
-        local orbitSpeed = 20  -- Speed of orbit (how fast the player moves around the target)
 
         -- Current time for orbit and spinning calculations
         local time = tick()
@@ -102,5 +108,53 @@ local function followAndTeleportOnHealthZero()
     end)
 end
 
+-- Function to make all structures invisible and shot-through
+local function makeStructuresInvisibleAndShotThrough()
+    for _, obj in pairs(workspace:GetChildren()) do
+        if obj:IsA("BasePart") and obj.Parent ~= game.Players.LocalPlayer.Character then
+            obj.Transparency = 1
+            obj.CanCollide = false
+        end
+    end
+end
+
+-- Create movable buttons for adjusting distance
+local function createButtons()
+    local screenGui = Instance.new("ScreenGui", game.Players.LocalPlayer.PlayerGui)
+    
+    -- Left Button (Decrease Radius)
+    local buttonLeft = Instance.new("TextButton")
+    buttonLeft.Size = buttonSize
+    buttonLeft.Position = buttonPositionLeft
+    buttonLeft.Text = "Decrease Distance"
+    buttonLeft.Parent = screenGui
+    
+    -- Right Button (Increase Radius)
+    local buttonRight = Instance.new("TextButton")
+    buttonRight.Size = buttonSize
+    buttonRight.Position = buttonPositionRight
+    buttonRight.Text = "Increase Distance"
+    buttonRight.Parent = screenGui
+    
+    -- Button actions to adjust the radius
+    buttonLeft.MouseButton1Click:Connect(function()
+        if radius > 5 then  -- Minimum distance
+            radius = radius - 5
+        end
+    end)
+    
+    buttonRight.MouseButton1Click:Connect(function()
+        if radius < 50 then  -- Maximum distance
+            radius = radius + 5
+        end
+    end)
+end
+
 -- Start the follow and teleport loop using RenderStepped
 followAndTeleportOnHealthZero()
+
+-- Make all structures invisible and shot-through
+makeStructuresInvisibleAndShotThrough()
+
+-- Create the buttons for adjusting the distance
+createButtons()
