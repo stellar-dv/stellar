@@ -27,13 +27,8 @@ local function bringPlayersInFront()
             local targetPosition = humanoidRootPart.Position + direction * distance
             
             -- Move the other player toward the target position
-            -- Instead of directly setting the position, we use Tweening for smoother movement
-            local tweenService = game:GetService("TweenService")
-            local goal = {Position = targetPosition}
-            local tweenInfo = TweenInfo.new(1, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut)
-            local tween = tweenService:Create(otherHumanoidRootPart, tweenInfo, goal)
-            tween:Play()
-
+            otherHumanoidRootPart.CFrame = CFrame.new(targetPosition)
+            
             -- Freeze the other player: Disable walking and make them non-collidable
             local humanoid = otherCharacter:FindFirstChildOfClass("Humanoid")
             if humanoid then
@@ -66,9 +61,79 @@ userInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
--- Optimized loop using Heartbeat for consistent updates
+-- Create a ScreenGui for the buttons
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = player:WaitForChild("PlayerGui")
+screenGui.ResetOnSpawn = false  -- Ensures the GUI persists through respawns
+
+-- Button to decrease distance (move closer)
+local minusButton = Instance.new("TextButton")
+minusButton.Size = UDim2.new(0, 50, 0, 50)
+minusButton.Position = UDim2.new(0.1, 0, 0.8, 0)
+minusButton.Text = "-"
+minusButton.Font = Enum.Font.SourceSans
+minusButton.TextSize = 30
+minusButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+minusButton.BackgroundColor3 = Color3.fromRGB(46, 46, 47)
+minusButton.BackgroundTransparency = 0.5
+minusButton.Parent = screenGui
+
+-- Button to increase distance (move further)
+local plusButton = Instance.new("TextButton")
+plusButton.Size = UDim2.new(0, 50, 0, 50)
+plusButton.Position = UDim2.new(0.2, 0, 0.8, 0)
+plusButton.Text = "+"
+plusButton.Font = Enum.Font.SourceSans
+plusButton.TextSize = 30
+plusButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+plusButton.BackgroundColor3 = Color3.fromRGB(46, 46, 47)
+plusButton.BackgroundTransparency = 0.5
+plusButton.Parent = screenGui
+
+-- Function to make buttons draggable
+local function makeButtonDraggable(button)
+    local dragging = false
+    local dragInput, mousePos, dragStart
+
+    button.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            mousePos = input.Position
+        end
+    end)
+
+    button.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseMovement) then
+            local delta = input.Position - dragStart
+            button.Position = UDim2.new(button.Position.X.Scale, button.Position.X.Offset + delta.X, button.Position.Y.Scale, button.Position.Y.Offset + delta.Y)
+            dragStart = input.Position
+        end
+    end)
+
+    button.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.Touch or input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = false
+        end
+    end)
+end
+
+-- Make the buttons draggable
+makeButtonDraggable(minusButton)
+makeButtonDraggable(plusButton)
+
+-- Button functionality to adjust the distance
+minusButton.MouseButton1Click:Connect(function()
+    distance = distance - 1 -- Move closer
+end)
+
+plusButton.MouseButton1Click:Connect(function()
+    distance = distance + 1 -- Move further away
+end)
+
+-- Use RenderStepped for more efficient frame updates
 local runService = game:GetService("RunService")
 
-runService.Heartbeat:Connect(function()
-    bringPlayersInFront()
+runService.RenderStepped:Connect(function()
+    bringPlayersInFront() -- Update players' positions every frame
 end)
