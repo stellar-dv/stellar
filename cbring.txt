@@ -7,13 +7,14 @@ local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 -- Variables for controlling distance
 local distance = 10 -- Initial distance in studs
 local moveSpeed = 10 -- Speed at which players move towards the character
+local teamCheck = true -- Set to true to enable team check, false to disable
 
 -- Function to update the position and freeze the other players
 local function bringPlayersInFront()
     -- Loop through all players in the game
     for _, otherPlayer in pairs(game.Players:GetPlayers()) do
-        -- Skip if it's the local player
-        if otherPlayer == player then
+        -- Skip if it's the local player or if team check is enabled and the other player is on the same team
+        if otherPlayer == player or (teamCheck and otherPlayer.Team == player.Team) then
             continue
         end
 
@@ -26,8 +27,13 @@ local function bringPlayersInFront()
             local targetPosition = humanoidRootPart.Position + direction * distance
             
             -- Move the other player toward the target position
-            otherHumanoidRootPart.CFrame = CFrame.new(targetPosition)
-            
+            -- Instead of directly setting the position, we use Tweening for smoother movement
+            local tweenService = game:GetService("TweenService")
+            local goal = {Position = targetPosition}
+            local tweenInfo = TweenInfo.new(1, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut)
+            local tween = tweenService:Create(otherHumanoidRootPart, tweenInfo, goal)
+            tween:Play()
+
             -- Freeze the other player: Disable walking and make them non-collidable
             local humanoid = otherCharacter:FindFirstChildOfClass("Humanoid")
             if humanoid then
@@ -60,8 +66,9 @@ userInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
--- Main loop to keep bringing players in front
-while true do
+-- Optimized loop using Heartbeat for consistent updates
+local runService = game:GetService("RunService")
+
+runService.Heartbeat:Connect(function()
     bringPlayersInFront()
-    wait(0.1) -- Update every 0.1 seconds
-end
+end)
