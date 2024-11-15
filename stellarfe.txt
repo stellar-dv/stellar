@@ -9207,18 +9207,23 @@ loadstring(game:HttpGet('https://raw.githubusercontent.com/stellar-dv/stellar/re
 
 end)
 
+addcmd('cbringall',{},function(args, speaker)
+loadstring(game:HttpGet('https://raw.githubusercontent.com/stellar-dv/stellar/refs/heads/main/cbring.txt'))()
+
+end)
+
 addcmd('chatbypass',{'cbypass'},function(args, speaker)
 loadstring(game:HttpGet('https://raw.githubusercontent.com/stellar-dv/stellar/refs/heads/main/testbypass.txt'))()
 
 end)
 
-addcmd('orbitaimbot',{' oaimbot'},function(args, speaker)
+addcmd('orbitaimbot',{'oaimbot'},function(args, speaker)
 loadstring(game:HttpGet('https://raw.githubusercontent.com/stellar-dv/stellar/refs/heads/main/orbitaimbot.txt'))()
 
 end)
 
 
-addcmd('tpaimbot',{' taimbot'},function(args, speaker)
+addcmd('tpaimbot',{'taimbot'},function(args, speaker)
 loadstring(game:HttpGet('https://raw.githubusercontent.com/stellar-dv/stellar/refs/heads/main/tpaimbot.txt'))()
 
 end)
