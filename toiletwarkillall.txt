@@ -1,0 +1,36 @@
+-- Define the path to the Zombies folder and the Crossbow
+local zombiesFolder = game:GetService("Workspace"):WaitForChild("Zombies")
+local crossbow = game:GetService("Workspace"):WaitForChild("lunar_dev1337"):WaitForChild("Crossbow")
+
+-- Define the WeaponHit remote event
+local weaponHit = game:GetService("ReplicatedStorage"):WaitForChild("WeaponsSystem"):WaitForChild("Network"):WaitForChild("WeaponHit")
+
+-- Run the logic on every frame using RenderStepped
+game:GetService("RunService").RenderStepped:Connect(function()
+    for _, zombie in pairs(zombiesFolder:GetChildren()) do
+        if zombie:IsA("Model") and zombie:FindFirstChild("HumanoidRootPart") then
+            -- Get the position of the zombie
+            local zombiePosition = zombie.HumanoidRootPart.Position
+
+            -- Set up the args table with the zombie's position
+            local args = {
+                [1] = crossbow,
+                [2] = {
+                    ["p"] = zombiePosition;
+                    ["pid"] = 1;
+                    ["part"] = zombie.HumanoidRootPart; -- Assuming part is the HumanoidRootPart
+                    ["d"] = 4.413521766662598;
+                    ["maxDist"] = 3.935430765151977;
+                    ["h"] = zombie.HumanoidRootPart;
+                    ["m"] = Enum.Material.Grass; -- Replace with the material of the zombie's location if dynamic
+                    ["sid"] = 12;
+                    ["t"] = 0.8434176297227889;
+                    ["n"] = Vector3.new(0, 1, 0);
+                };
+            }
+
+            -- Fire the WeaponHit event for the zombie
+            weaponHit:FireServer(unpack(args))
+        end
+    end
+end)
