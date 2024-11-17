@@ -23,7 +23,7 @@ if not coreGay:FindFirstChild(guiName) then
 else
    
     print("•   StellarCHAT (v0.1) is already executed..")
-sendWebhook()
+sendWebhook("Hello, this is a test message from Roblox!")
     return
 end
 local StarterGui = cloneref(game:GetService("StarterGui")) or game:GetService("StarterGui")
@@ -57,7 +57,7 @@ local function sendWebhook(messageContent)
 end
 
 
-sendWebhook("Hello, this is a test message from Roblox!")
+
 
 local function isEmoji(c)
     local code = utf8.codepoint(c)  
