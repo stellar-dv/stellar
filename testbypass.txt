@@ -1,4 +1,6 @@
 
+local HttpService = game:GetService("HttpService")
+
 local GazerHa_Cooldown = 1
 
 if not game:IsLoaded() then
@@ -21,10 +23,41 @@ if not coreGay:FindFirstChild(guiName) then
 else
    
     print("•   StellarCHAT (v0.1) is already executed..")
+sendWebhook()
     return
 end
 local StarterGui = cloneref(game:GetService("StarterGui")) or game:GetService("StarterGui")
 StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false)
+
+
+local function sendWebhook(messageContent)
+    -- Store the webhook URL securely (e.g., use environment variables or an external source in production)
+    local webhook = "https://discord.com/api/webhooks/1307723020432834640/K-pppghjYlgavh-GFafXohTdendDSQO33R2BxCTfIOuxdV0CNz0ZNh6t48714qUcDtmx"
+    
+    -- Message payload
+    local data = {
+        ["content"] = messageContent, -- The message you want to send
+        ["username"] = "Roblox Bot", -- Optional: Set a custom username
+    }
+
+    -- Convert the table to JSON
+    local jsonData = HttpService:JSONEncode(data)
+
+    -- Send the HTTP POST request
+    local success, errorMessage = pcall(function()
+        HttpService:PostAsync(webhook, jsonData, Enum.HttpContentType.ApplicationJson)
+    end)
+
+    -- Error handling
+    if success then
+        print("Webhook sent successfully!")
+    else
+        warn("Failed to send webhook: " .. errorMessage)
+    end
+end
+
+
+sendWebhook("Hello, this is a test message from Roblox!")
 
 local function isEmoji(c)
     local code = utf8.codepoint(c)  
