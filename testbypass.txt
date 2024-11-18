@@ -1,7 +1,6 @@
 local HttpService = game:GetService("HttpService")
 local TextChatService = game:GetService("TextChatService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local StarterGui = game:GetService("StarterGui")
 
 -- Function to securely send a webhook
 local function sendWebhook(messageContent)
@@ -69,9 +68,6 @@ local function onChatMessage(message)
     -- Optionally, send to a webhook
     sendWebhook(modifiedMessage)
 end
-
--- Disable default chat GUI (if desired)
-StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, false)
 
 -- Hook into chat messages
 TextChatService.OnIncomingMessage = function(message)
