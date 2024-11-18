@@ -41,12 +41,6 @@ local function fadeText(labeltext)
     screenGui:Destroy()
 end
 
-fadeText("Made By Gazer Ha")
-fadeText("Yu Ego so big, me mad >:(")
-fadeText("For Better Bypass\nRead Your Clipboard")
-task.wait(1)
-fadeText("READ THE TUTORIAL ON YOUR COPY")
-
 local function isEmoji(c)
     local code = utf8.codepoint(c)
     return (code >= 0x1F600 and code <= 0x1F64F) or  -- Emoticons
