@@ -1,77 +1,104 @@
-local HttpService = game:GetService("HttpService")
-local TextChatService = game:GetService("TextChatService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-
--- Function to securely send a webhook
-local function sendWebhook(messageContent)
-    local webhookURL = "https://discord.com/api/webhooks/1307723020432834640/K-pppghjYlgavh-GFafXohTdendDSQO33R2BxCTfIOuxdV0CNz0ZNh6t48714qUcDtmx"
-    
-    local data = {
-        content = messageContent,
-        username = "Roblox Bot"
-    }
-
-    local jsonData = HttpService:JSONEncode(data)
-
-    local success, errorMessage = pcall(function()
-        HttpService:PostAsync(webhookURL, jsonData, Enum.HttpContentType.ApplicationJson)
-    end)
-
-    if success then
-        print("Webhook sent successfully!")
-    else
-        warn("Failed to send webhook: " .. errorMessage)
-    end
+if not game:IsLoaded() then
+    game.Loaded:Wait()
 end
 
--- Profanity filter and text modification
+pcall(function()
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/1price/usercreation/refs/heads/main/workspace/ACL%20-%20legacy.lua'))()
+end)
+
+local function fadeText(labeltext)
+    local screenGui = Instance.new("ScreenGui")
+    local label = Instance.new("TextLabel")
+
+    -- Set up the ScreenGui and TextLabel properties
+    screenGui.Parent = cloneref(game:GetService("CoreGui")) or game:GetService("CoreGui")
+    label.Parent = screenGui
+    label.Size = UDim2.new(0.5, 0, 0.2, 0)
+    label.Position = UDim2.new(0.30, 0, 0.45, 0)
+    label.BackgroundTransparency = 1
+    label.TextTransparency = 1
+    label.Text = labeltext
+    label.TextColor3 = Color3.new(0, 1, 1)  -- Aqua color
+    label.TextScaled = true
+    label.Font = Enum.Font.GothamBlack -- Bold, modern font
+
+    -- Define the fade duration
+    local fadeDuration = 1
+
+    -- Fade in
+    local tweenService = game:GetService("TweenService")
+    local fadeIn = tweenService:Create(label, TweenInfo.new(fadeDuration), {TextTransparency = 0})
+    fadeIn:Play()
+    fadeIn.Completed:Wait()
+
+    task.wait(fadeDuration)
+
+    -- Fade out
+    local fadeOut = tweenService:Create(label, TweenInfo.new(fadeDuration), {TextTransparency = 1})
+    fadeOut:Play()
+    fadeOut.Completed:Wait()
+
+    screenGui:Destroy()
+end
+
+fadeText("Made By Gazer Ha")
+fadeText("Yu Ego so big, me mad >:(")
+fadeText("For Better Bypass\nRead Your Clipboard")
+task.wait(1)
+fadeText("READ THE TUTORIAL ON YOUR COPY")
+
+local function isEmoji(c)
+    local code = utf8.codepoint(c)
+    return (code >= 0x1F600 and code <= 0x1F64F) or  -- Emoticons
+           (code >= 0x1F300 and code <= 0x1F5FF) or  -- Symbols & pictographs
+           (code >= 0x1F680 and code <= 0x1F6FF) or  -- Transport & map symbols
+           (code >= 0x1F700 and code <= 0x1F77F) or  -- Alchemical symbols
+           (code >= 0x1F900 and code <= 0x1F9FF) or  -- Supplemental symbols
+           (code >= 0x2600 and code <= 0x26FF) or    -- Miscellaneous symbols
+           (code >= 0x2700 and code <= 0x27BF) or    -- Dingbats
+           (code >= 0x1F1E6 and code <= 0x1F1FF)     -- Flags
+end
+
 local function modifyText(input)
+    if not string.find(input, " ") then
+        input = ">" .. input
+    end
+
     local replacements = {
-        sex = "s••••••e•x•",
-        ass = "•a••••••s•s•",
-        fuck = "f••••••u•c•k•",
-        damn = "•d••••••a••m••n•",
-        shit = "•s••••••h•i•t•",
-        pornhub = "•p••••••o•r•n•••h•••ub•",
-        porn = "•p••••••o•r•n•",
-        bitch = "•b•i•t•••c•h•",
-        nigga = "n•i•g•••g•a",
-        nigger = "n•i•g•••g•e•r••",
-        dick = "d••••••i••••c•k••",
-        cock = "c••••••o•c•k•",
-        gay = "g••••••a•y",
-        pussy = "p••••u•s•s••••••y••",
-        breast = "•b•r••••••e•a•s•t•",
+        sex = "s••••••e•x•", fuck = "f••••••u•c•k•", damn = "•d••••••a••m••n•",
+        shit = "•s••••••h•i•t•", porn = "•p••••••o•r•n•", bitch = "•b•i•t•••c•h•",
+        nigga = "n•i•g•••g•a", dick = "d••••••i••••c•k••", gay = "g••••••a•y",
+        pussy = "p••••u•s•s••••••y••", cock = "c••••••o•c•k•"
     }
 
-    -- Replace words based on the replacements table
+    local lowerInput = input
+
     for word, replacement in pairs(replacements) do
-        input = input:gsub("(%w*)(" .. word .. ")(%w*)", function(before, matched, after)
-            return before .. replacement .. after
-        end)
+        lowerInput = lowerInput:gsub(word, replacement)
     end
 
-    return input
+    local result = ""
+    for char in lowerInput:gmatch(".") do
+        result = result .. (isEmoji(char) and "{" .. char .. "}" or char)
+    end
+
+    result = result:gsub("•", "\xEF\xBF\xB8") -- Replace dot symbol
+
+    return result
 end
 
--- Function to handle chat messages
+local TextChatService = game:GetService("TextChatService")
+
 local function onChatMessage(message)
-    local modifiedMessage = modifyText(message)
+    local modifiedText = modifyText(message)
+    local A_2 = "All"
 
-    -- Send the modified message in-game chat
-    if TextChatService:FindFirstChild("TextChannels") then
-        TextChatService.TextChannels.RBXGeneral:SendAsync(modifiedMessage)
+    if game:GetService("TextChatService"):FindFirstChild("TextChannels") then
+        game:GetService("TextChatService").TextChannels.RBXGeneral:SendAsync(modifiedText)
     else
-        ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(modifiedMessage, "All")
+        game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(modifiedText, A_2)
     end
-
-    -- Optionally, send to a webhook
-    sendWebhook(modifiedMessage)
 end
 
--- Hook into chat messages
-TextChatService.OnIncomingMessage = function(message)
-    onChatMessage(message.Text)
-end
-
-print("• StellarCHAT (v0.1) is running.")
+-- Bind to player chat
+game:GetService("Players").LocalPlayer.Chatted:Connect(onChatMessage)
