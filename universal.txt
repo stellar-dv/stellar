@@ -1,50 +1,87 @@
--- Get all players in the Workspace.FPlayers
+-- Pre-fetch services and reusable data for better performance
+local playersService = game:GetService("Players")
 local playersFolder = game:GetService("Workspace"):FindFirstChild("FPlayers")
-if not playersFolder then
-    warn("FPlayers folder not found in Workspace!")
-    return
-end
+local replicatedStorage = game:GetService("ReplicatedStorage")
+local acsEngine = replicatedStorage:WaitForChild("ACS_Engine", 9e9)
+local eventsFolder = acsEngine and acsEngine:WaitForChild("Events", 9e9)
+local damageEvent = eventsFolder and eventsFolder:WaitForChild("Damage", 9e9)
 
--- Loop through each player in the FPlayers folder
-for _, playerModel in ipairs(playersFolder:GetChildren()) do
-    -- Ensure the player model has the required parts
+-- Pre-fetch static data
+local origin = Vector3.new(-272.4232177734375, -14.307608604431152, -23.735084533691406)
+local weaponName = "M4A1"
+local bulletIDPrefix = "unique_bullet_id_"
+
+-- Cache args template to avoid creating it repeatedly
+local argsTemplate = {
+    [1] = {
+        origin = origin,
+        weaponName = weaponName,
+        bulletID = nil, -- To be set dynamically
+        currentPenetrationCount = 1,
+        shellSpeed = 210,
+        maxPenetrationCount = 1,
+        registeredParts = {},
+        penetrationMultiplier = 0.8,
+        shellType = "Bullet",
+        shellMaxDist = 7000,
+        filterDescendants = {},
+    },
+    [2] = nil, -- humanoid target
+    [3] = 154.2140350341797, -- Distance value
+    [4] = 2, -- Additional parameter
+    [5] = nil, -- Hitbox part target
+}
+
+-- Pre-fetch common checks outside of the loop
+local function getTargetData(playerModel)
     local humanoid = playerModel:FindFirstChild("Humanoid")
     local leftLowerArm = playerModel:FindFirstChild("LeftLowerArm")
     local hitboxLeftLowerArm = leftLowerArm and leftLowerArm:FindFirstChild("HitboxLeftLowerArm")
 
-    if humanoid and leftLowerArm and hitboxLeftLowerArm then
-        -- Create the args table dynamically for each player
-        local args = {
-            [1] = {
-                ["origin"] = Vector3.new(-272.4232177734375, -14.307608604431152, -23.735084533691406),
-                ["weaponName"] = "M4A1",
-                ["bulletID"] = "unique_bullet_id_" .. tostring(math.random()), -- Generate a unique bullet ID
-                ["currentPenetrationCount"] = 1,
-                ["shellSpeed"] = 210,
-                ["maxPenetrationCount"] = 1,
-                ["registeredParts"] = {
-                    [hitboxLeftLowerArm] = true,
-                },
-                ["penetrationMultiplier"] = 0.8,
-                ["shellType"] = "Bullet",
-                ["shellMaxDist"] = 7000,
-                ["filterDescendants"] = {
-                    [1] = game:GetService("Workspace"):WaitForChild("blakneycurse1337", 9e9),
-                    [2] = game:GetService("Workspace"):WaitForChild("Camera", 9e9):WaitForChild("Viewmodel", 9e9),
-                },
-            },
-            [2] = humanoid, -- Target the player's humanoid
-            [3] = 154.2140350341797, -- Distance value (adjustable as needed)
-            [4] = 2, -- Additional parameter (adjustable as needed)
-            [5] = hitboxLeftLowerArm, -- Target the hitbox part
-        }
-
-        -- Invoke the damage event for this player
-        game:GetService("ReplicatedStorage"):WaitForChild("ACS_Engine", 9e9):WaitForChild("Events", 9e9):WaitForChild("Damage", 9e9):InvokeServer(unpack(args))
-
-        -- Print debug information
-        print("Targeting player: " .. playerModel.Name)
-    else
-        warn("Player " .. playerModel.Name .. " is missing required parts.")
+    if humanoid and hitboxLeftLowerArm then
+        return humanoid, hitboxLeftLowerArm
     end
 end
+
+-- Function to handle targeting logic
+local function handleTarget(playerModel)
+    -- Fetch humanoid and hitbox references
+    local humanoid, hitboxLeftLowerArm = getTargetData(playerModel)
+    if not humanoid then return end -- Skip if no humanoid found
+
+    -- Set dynamic values for args
+    argsTemplate[1].bulletID = bulletIDPrefix .. tostring(math.random())  -- Unique bullet ID
+    argsTemplate[2] = humanoid -- Target the player's humanoid
+    argsTemplate[5] = hitboxLeftLowerArm -- Target the hitbox part
+    argsTemplate[1].registeredParts[hitboxLeftLowerArm] = true
+
+    -- Invoke the damage event for this player
+    damageEvent:InvokeServer(unpack(argsTemplate))
+end
+
+-- Function to process all players asynchronously
+local function processAllPlayersAsync()
+    -- Process Players Service
+    local players = playersService:GetPlayers()
+    for i = 1, #players do
+        local player = players[i]
+        if player.Character then
+            task.spawn(function()
+                handleTarget(player.Character)
+            end)
+        end
+    end
+
+    -- Process Players Folder (FPlayers)
+    if playersFolder then
+        local playerModels = playersFolder:GetChildren()
+        for i = 1, #playerModels do
+            task.spawn(function()
+                handleTarget(playerModels[i])
+            end)
+        end
+    end
+end
+
+-- Execute the function immediately without waiting (asynchronously)
+processAllPlayersAsync()
