@@ -1,23 +1,19 @@
--- Pre-fetch services and reusable data for better performance
-local playersService = game:GetService("Players")
+-- Get all players in the Workspace.FPlayers
 local playersFolder = game:GetService("Workspace"):FindFirstChild("FPlayers")
-local replicatedStorage = game:GetService("ReplicatedStorage")
-local damageEvent = replicatedStorage:WaitForChild("ACS_Engine", 9e9):WaitForChild("Events", 9e9):WaitForChild("Damage", 9e9)
-
--- Ensure FPlayers exists
 if not playersFolder then
     warn("FPlayers folder not found in Workspace!")
+    return
 end
 
--- Function to handle targeting logic
-local function handleTarget(playerModel)
+-- Loop through each player in the FPlayers folder
+for _, playerModel in ipairs(playersFolder:GetChildren()) do
     -- Ensure the player model has the required parts
     local humanoid = playerModel:FindFirstChild("Humanoid")
     local leftLowerArm = playerModel:FindFirstChild("LeftLowerArm")
     local hitboxLeftLowerArm = leftLowerArm and leftLowerArm:FindFirstChild("HitboxLeftLowerArm")
 
-    if humanoid and hitboxLeftLowerArm then
-        -- Create args for the current player
+    if humanoid and leftLowerArm and hitboxLeftLowerArm then
+        -- Create the args table dynamically for each player
         local args = {
             [1] = {
                 ["origin"] = Vector3.new(-272.4232177734375, -14.307608604431152, -23.735084533691406),
@@ -32,29 +28,23 @@ local function handleTarget(playerModel)
                 ["penetrationMultiplier"] = 0.8,
                 ["shellType"] = "Bullet",
                 ["shellMaxDist"] = 7000,
-                ["filterDescendants"] = {},
+                ["filterDescendants"] = {
+                    [1] = game:GetService("Workspace"):WaitForChild("blakneycurse1337", 9e9),
+                    [2] = game:GetService("Workspace"):WaitForChild("Camera", 9e9):WaitForChild("Viewmodel", 9e9),
+                },
             },
             [2] = humanoid, -- Target the player's humanoid
-            [3] = 154.2140350341797, -- Distance value
-            [4] = 2, -- Additional parameter
+            [3] = 154.2140350341797, -- Distance value (adjustable as needed)
+            [4] = 2, -- Additional parameter (adjustable as needed)
             [5] = hitboxLeftLowerArm, -- Target the hitbox part
         }
 
         -- Invoke the damage event for this player
-        damageEvent:InvokeServer(unpack(args))
-    end
-end
+        game:GetService("ReplicatedStorage"):WaitForChild("ACS_Engine", 9e9):WaitForChild("Events", 9e9):WaitForChild("Damage", 9e9):InvokeServer(unpack(args))
 
--- Loop through players in the Players service
-for _, player in ipairs(playersService:GetPlayers()) do
-    if player.Character then
-        handleTarget(player.Character)
-    end
-end
-
--- Loop through players in the Workspace.FPlayers folder
-if playersFolder then
-    for _, playerModel in ipairs(playersFolder:GetChildren()) do
-        handleTarget(playerModel)
+        -- Print debug information
+        print("Targeting player: " .. playerModel.Name)
+    else
+        warn("Player " .. playerModel.Name .. " is missing required parts.")
     end
 end
