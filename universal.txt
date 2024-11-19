@@ -4,8 +4,6 @@ local Camera = workspace.CurrentCamera
 local UserInputService = game:GetService("UserInputService")
 
 local isAimbotActive = false  -- Flag to check if aimbot should be active
-local fovRadius = 100  -- FOV radius (in pixels)
-local fovCircle = Drawing.new("Circle")  -- FOV circle (visual)
 
 -- Function to create and manage player tag, tracer, health bar, and box
 local function CreateTagAndTracer(player)
@@ -192,24 +190,16 @@ local function AimAtTarget()
         end
     end
 
-    -- Aim at the closest player (Head or HumanoidRootPart)
+    -- Aim silently at the closest player by adjusting their humanoid root part
     if closestPlayer then
         local targetPart = closestPlayer.Character:FindFirstChild("Head") or closestPlayer.Character:FindFirstChild("HumanoidRootPart")
         if targetPart then
             local direction = (targetPart.Position - Camera.CFrame.Position).unit
-            Camera.CFrame = CFrame.new(Camera.CFrame.Position, Camera.CFrame.Position + direction)
+            local targetPosition = Camera.CFrame.Position + direction * 10  -- Adjust the aim silently
+            closestPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
         end
     end
 end
-
--- Update FOV Circle
-RunService.RenderStepped:Connect(function()
-    fovCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
-    fovCircle.Radius = fovRadius
-    fovCircle.Thickness = 2
-    fovCircle.Color = Color3.fromRGB(255, 0, 0)  -- Red FOV circle
-    fovCircle.Visible = isAimbotActive
-end)
 
 -- Listen for Mouse Button Input
 UserInputService.InputBegan:Connect(function(input)
