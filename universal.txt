@@ -3,6 +3,8 @@ local RunService = game:GetService("RunService")
 local Camera = workspace.CurrentCamera
 local UserInputService = game:GetService("UserInputService")
 
+local isAimbotActive = false  -- Flag to check if aimbot should be active
+
 -- Function to create and manage player tag, tracer, health bar, and box
 local function CreateTagAndTracer(player)
     local function OnCharacterAdded(character)
@@ -160,7 +162,7 @@ end)
 -- AimBot Logic (New Addition)
 local function AimAtTarget()
     -- Check if the left mouse button (LMB) is held
-    if not UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
+    if not isAimbotActive then
         return -- Exit if LMB is not held
     end
 
@@ -195,4 +197,17 @@ end
 -- Connect AimBot to RenderStepped (aims at the closest target each frame)
 RunService.RenderStepped:Connect(function()
     AimAtTarget()
+end)
+
+-- Detect when LMB is pressed and released
+UserInputService.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        isAimbotActive = true
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        isAimbotActive = false
+    end
 end)
