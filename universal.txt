@@ -6,7 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local isAimbotActive = false  -- Flag to check if aimbot should be active
 
 -- Function to create and manage player tag, tracer, and 3D box
-local function CreateTagAndTracer(player)
+local function CreatePlayerVisuals(player)
     local function OnCharacterAdded(character)
         local head = character:WaitForChild("Head", 10) -- Wait for the Head part
         if not head then return end
@@ -21,22 +21,19 @@ local function CreateTagAndTracer(player)
 
         local text = Instance.new("TextLabel")
         text.Size = UDim2.new(1, 0, 1, 0)
-        text.BackgroundTransparency = 0.5
-        text.BackgroundColor3 = Color3.fromRGB(0, 0, 0)  -- Background color for better readability
+        text.BackgroundTransparency = 1
         text.TextScaled = true
         text.TextWrapped = false -- Disable text wrapping
         text.Font = Enum.Font.SourceSansBold
         text.TextStrokeTransparency = 0.5
         text.TextColor3 = player.Team and player.Team.TeamColor.Color or Color3.new(1, 1, 1)
-        text.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)  -- Stroke for better visibility
         text.Parent = tag
         tag.Parent = head
 
         -- Tracer
         local tracer = Drawing.new("Line")
-        tracer.Thickness = 2
+        tracer.Thickness = 1
         tracer.Visible = false
-        tracer.Transparency = 1
 
         -- 3D Box
         local box = Instance.new("BoxHandleAdornment")
@@ -56,14 +53,13 @@ local function CreateTagAndTracer(player)
         end
 
         -- Update Name Tag, Tracer, and 3D Box
-        local function UpdateNameTagAndTracer()
+        local function UpdateVisuals()
             if character and character:FindFirstChild("HumanoidRootPart") then
                 local humanoid = character:FindFirstChildOfClass("Humanoid")
                 local rootPart = character.HumanoidRootPart
 
                 -- Update name and distance
                 local health = humanoid and math.floor(humanoid.Health) or 0
-                local maxHealth = humanoid and humanoid.MaxHealth or 100
                 local distance = (Camera.CFrame.Position - rootPart.Position).Magnitude
                 text.Text = string.format("Name: %s | Distance: %d", player.Name, math.floor(distance))
 
@@ -73,17 +69,13 @@ local function CreateTagAndTracer(player)
                     tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
                     tracer.To = Vector2.new(screenPosition.X, screenPosition.Y)
                     tracer.Visible = true
-                    tracer.Color = Color3.fromHSV(health / maxHealth, 1, 1)  -- Color changes based on health
+                    tracer.Color = player.Team and player.Team.TeamColor.Color or Color3.new(1, 1, 1)
 
-                    -- Update the box color based on health
-                    box.Color3 = Color3.fromHSV(health / maxHealth, 1, 1)  -- Smooth color shift based on health
+                    -- Update the box color to cycle through RGB
+                    box.Color3 = GetRGBColor(tick())
 
                     -- Only make the box visible if the character is on screen and not obstructed by walls
-                    if IsVisibleFromCamera(rootPart.Position) then
-                        box.Visible = true
-                    else
-                        box.Visible = false
-                    end
+                    box.Visible = IsVisibleFromCamera(rootPart.Position)
                 else
                     tracer.Visible = false
                     box.Visible = false
@@ -95,7 +87,7 @@ local function CreateTagAndTracer(player)
         end
 
         -- Connect RenderStepped to update Name Tag, Tracer, and Box
-        local updateConnection = RunService.RenderStepped:Connect(UpdateNameTagAndTracer)
+        local updateConnection = RunService.RenderStepped:Connect(UpdateVisuals)
 
         -- Clean up when character dies
         character:WaitForChild("Humanoid").Died:Connect(function()
@@ -115,31 +107,30 @@ end
 -- Initialize for all current players
 for _, player in ipairs(Players:GetPlayers()) do
     if player ~= Players.LocalPlayer then
-        CreateTagAndTracer(player)
+        CreatePlayerVisuals(player)
     end
 end
 
 -- Listen for new players joining
 Players.PlayerAdded:Connect(function(player)
     if player ~= Players.LocalPlayer then
-        CreateTagAndTracer(player)
+        CreatePlayerVisuals(player)
     end
 end)
 
--- AimBot Logic (New Addition)
-local function AimAtTarget()
-    -- Check if the left mouse button (LMB) is held
-    if not isAimbotActive then
-        return -- Exit if LMB is not held
-    end
+-- AimBot Logic
+local function AimAtClosestTarget()
+    -- Check if the aimbot is active
+    if not isAimbotActive then return end
 
-    -- Get the closest enemy player
+    -- Find the closest enemy player
     local closestPlayer = nil
     local closestDistance = math.huge
+    local closestDot = -math.huge  -- Used to measure how within FOV the player is
 
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            -- Team check: only aim at players not on the same team
+            -- Only aim at players not on the same team
             if player.Team ~= Players.LocalPlayer.Team then
                 local rootPart = player.Character.HumanoidRootPart
                 local screenPosition, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
@@ -147,9 +138,15 @@ local function AimAtTarget()
                 -- Only consider players that are visible
                 if onScreen and IsVisibleFromCamera(rootPart.Position) then
                     local distance = (Camera.CFrame.Position - rootPart.Position).Magnitude
+                    local direction = (rootPart.Position - Camera.CFrame.Position).unit
 
-                    -- If the player is closer, consider them
-                    if distance < closestDistance then
+                    -- Calculate FOV Dot product to check if within FOV
+                    local viewDir = Camera.CFrame.LookVector
+                    local dot = direction:Dot(viewDir)
+
+                    -- If the player is closer and within FOV, consider them
+                    if dot > closestDot and distance < closestDistance and dot > 0.5 then
+                        closestDot = dot
                         closestDistance = distance
                         closestPlayer = player
                     end
@@ -158,7 +155,7 @@ local function AimAtTarget()
         end
     end
 
-    -- Aim silently at the closest player by adjusting their humanoid root part
+    -- Aim silently at the closest player
     if closestPlayer then
         local targetPart = closestPlayer.Character:FindFirstChild("Head") or closestPlayer.Character:FindFirstChild("HumanoidRootPart")
         if targetPart then
@@ -169,7 +166,7 @@ local function AimAtTarget()
     end
 end
 
--- Listen for Mouse Button Input
+-- Listen for Mouse Button Input to toggle Aimbot
 UserInputService.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         isAimbotActive = true
@@ -182,5 +179,5 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
--- Call AimAtTarget in RenderStepped to keep checking the closest target
-RunService.RenderStepped:Connect(AimAtTarget)
+-- Continuously check and aim at the closest target
+RunService.RenderStepped:Connect(AimAtClosestTarget)
