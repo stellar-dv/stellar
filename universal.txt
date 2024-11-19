@@ -48,8 +48,8 @@ local function CreatePlayerVisuals(player)
         -- Raycasting function to check if the player is visible (not behind walls)
         local function IsVisibleFromCamera(position)
             local ray = Ray.new(Camera.CFrame.Position, (position - Camera.CFrame.Position).unit * (position - Camera.CFrame.Position).Magnitude)
-            local hitPart = workspace:FindPartOnRay(ray, character)
-            return hitPart == nil -- True if nothing is hit, meaning the view is not obstructed
+            local hitPart, hitPosition = workspace:FindPartOnRay(ray, character)
+            return not hitPart or hitPart:IsDescendantOf(character) -- True if no hit or hit only the character itself
         end
 
         -- Update Name Tag, Tracer, and 3D Box
@@ -61,7 +61,7 @@ local function CreatePlayerVisuals(player)
                 -- Update name and distance
                 local health = humanoid and math.floor(humanoid.Health) or 0
                 local distance = (Camera.CFrame.Position - rootPart.Position).Magnitude
-                text.Text = string.format("Name: %s | Distance: %d", player.Name, math.floor(distance))
+                text.Text = string.format("Name: %s | Health: %d | Distance: %d", player.Name, health, math.floor(distance))
 
                 -- Update tracer
                 local screenPosition, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
@@ -72,7 +72,7 @@ local function CreatePlayerVisuals(player)
                     tracer.Color = player.Team and player.Team.TeamColor.Color or Color3.new(1, 1, 1)
 
                     -- Update the box color to cycle through RGB
-                    box.Color3 = GetRGBColor(tick())
+                    box.Color3 = Color3.fromHSV(tick() % 5 / 5, 1, 1)  -- Cycles through hue over time
 
                     -- Only make the box visible if the character is on screen and not obstructed by walls
                     box.Visible = IsVisibleFromCamera(rootPart.Position)
@@ -161,7 +161,7 @@ local function AimAtClosestTarget()
         if targetPart then
             local direction = (targetPart.Position - Camera.CFrame.Position).unit
             local targetPosition = Camera.CFrame.Position + direction * 10  -- Adjust the aim silently
-            closestPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(targetPosition)
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPosition)  -- Update camera to aim at target
         end
     end
 end
