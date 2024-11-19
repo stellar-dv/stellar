@@ -4,6 +4,8 @@ local Camera = workspace.CurrentCamera
 local UserInputService = game:GetService("UserInputService")
 
 local isAimbotActive = false  -- Flag to check if aimbot should be active
+local fovRadius = 100  -- FOV radius (in pixels)
+local fovCircle = Drawing.new("Circle")  -- FOV circle (visual)
 
 -- Function to create and manage player tag, tracer, health bar, and box
 local function CreateTagAndTracer(player)
@@ -74,14 +76,6 @@ local function CreateTagAndTracer(player)
             local ray = Ray.new(Camera.CFrame.Position, (position - Camera.CFrame.Position).unit * (position - Camera.CFrame.Position).Magnitude)
             local hitPart = workspace:FindPartOnRay(ray, character)
             return hitPart == nil -- True if nothing is hit, meaning the view is not obstructed
-        end
-
-        -- Function to cycle RGB colors for box
-        local function GetRGBColor(time)
-            local r = math.abs(math.sin(time * 0.5))
-            local g = math.abs(math.sin(time * 0.7))
-            local b = math.abs(math.sin(time * 0.9))
-            return Color3.new(r, g, b)
         end
 
         -- Update Name Tag, Tracer, Health Bar, and 3D Box
@@ -169,15 +163,30 @@ local function AimAtTarget()
     -- Get the closest enemy player
     local closestPlayer = nil
     local closestDistance = math.huge
+    local closestDot = -math.huge  -- Used to measure how within FOV the player is
 
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
             -- Team check: only aim at players not on the same team
             if player.Team ~= Players.LocalPlayer.Team then
-                local distance = (Camera.CFrame.Position - player.Character.HumanoidRootPart.Position).Magnitude
-                if distance < closestDistance then
-                    closestDistance = distance
-                    closestPlayer = player
+                local rootPart = player.Character.HumanoidRootPart
+                local screenPosition, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
+
+                -- Only consider players that are visible
+                if onScreen and IsVisibleFromCamera(rootPart.Position) then
+                    local distance = (Camera.CFrame.Position - rootPart.Position).Magnitude
+                    local direction = (rootPart.Position - Camera.CFrame.Position).unit
+
+                    -- Calculate FOV Dot product to check if within FOV
+                    local viewDir = Camera.CFrame.LookVector
+                    local dot = direction:Dot(viewDir)
+
+                    -- If the player is closer and within FOV, consider them
+                    if dot > closestDot and distance < closestDistance and dot > 0.5 then
+                        closestDot = dot
+                        closestDistance = distance
+                        closestPlayer = player
+                    end
                 end
             end
         end
@@ -188,18 +197,21 @@ local function AimAtTarget()
         local targetPart = closestPlayer.Character:FindFirstChild("Head") or closestPlayer.Character:FindFirstChild("HumanoidRootPart")
         if targetPart then
             local direction = (targetPart.Position - Camera.CFrame.Position).unit
-            local newCFrame = CFrame.new(Camera.CFrame.Position, Camera.CFrame.Position + direction)
-            Camera.CFrame = newCFrame
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, Camera.CFrame.Position + direction)
         end
     end
 end
 
--- Connect AimBot to RenderStepped (aims at the closest target each frame)
+-- Update FOV Circle
 RunService.RenderStepped:Connect(function()
-    AimAtTarget()
+    fovCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    fovCircle.Radius = fovRadius
+    fovCircle.Thickness = 2
+    fovCircle.Color = Color3.fromRGB(255, 0, 0)  -- Red FOV circle
+    fovCircle.Visible = isAimbotActive
 end)
 
--- Detect when LMB is pressed and released
+-- Listen for Mouse Button Input
 UserInputService.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         isAimbotActive = true
@@ -211,3 +223,6 @@ UserInputService.InputEnded:Connect(function(input)
         isAimbotActive = false
     end
 end)
+
+-- Call AimAtTarget in RenderStepped to keep checking the closest target
+RunService.RenderStepped:Connect(AimAtTarget)
