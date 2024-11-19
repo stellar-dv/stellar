@@ -1,0 +1,198 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Camera = workspace.CurrentCamera
+local UserInputService = game:GetService("UserInputService")
+
+-- Function to create and manage player tag, tracer, health bar, and box
+local function CreateTagAndTracer(player)
+    local function OnCharacterAdded(character)
+        local head = character:WaitForChild("Head", 10) -- Wait for the Head part
+        if not head then return end
+
+        -- Create Name Tag
+        local tag = Instance.new("BillboardGui")
+        tag.Name = "NameTag"
+        tag.Adornee = head
+        tag.Size = UDim2.new(0, 150, 0, 50)
+        tag.StudsOffset = Vector3.new(0, 2, 0)
+        tag.AlwaysOnTop = true
+
+        local text = Instance.new("TextLabel")
+        text.Size = UDim2.new(1, 0, 1, 0)
+        text.BackgroundTransparency = 1
+        text.TextScaled = true
+        text.TextWrapped = false -- Disable text wrapping
+        text.Font = Enum.Font.SourceSansBold
+        text.TextStrokeTransparency = 0.5
+        text.TextColor3 = player.Team and player.Team.TeamColor.Color or Color3.new(1, 1, 1)
+        text.Parent = tag
+        tag.Parent = head
+
+        -- Tracer
+        local tracer = Drawing.new("Line")
+        tracer.Thickness = 1
+        tracer.Visible = false
+
+        -- 3D Box
+        local box = Instance.new("BoxHandleAdornment")
+        box.Name = "PlayerBox"
+        box.Adornee = character:WaitForChild("HumanoidRootPart")
+        box.Size = Vector3.new(4, 6, 4) -- Size of the box
+        box.Color3 = player.Team and player.Team.TeamColor.Color or Color3.new(1, 0, 0) -- Set initial box color
+        box.Transparency = 0.5
+        box.Visible = false -- Initially set to not visible
+        box.Parent = character
+
+        -- Health Bar
+        local healthBar = Instance.new("BillboardGui")
+        healthBar.Name = "HealthBar"
+        healthBar.Adornee = head
+        healthBar.Size = UDim2.new(0, 150, 0, 10)
+        healthBar.StudsOffset = Vector3.new(0, 3, 0)
+        healthBar.AlwaysOnTop = true
+        healthBar.Parent = head
+
+        -- Health Bar Outline (black border)
+        local healthBarOutline = Instance.new("Frame")
+        healthBarOutline.Size = UDim2.new(1, 6, 1, 6)  -- Slightly larger to create the border
+        healthBarOutline.Position = UDim2.new(0, -3, 0, -3)  -- Center it with the fill
+        healthBarOutline.BackgroundColor3 = Color3.new(0, 0, 0)  -- Black color
+        healthBarOutline.BorderSizePixel = 0
+        healthBarOutline.Parent = healthBar
+
+        -- Health Bar Fill (green)
+        local healthBarFill = Instance.new("Frame")
+        healthBarFill.Size = UDim2.new(1, 0, 1, 0)
+        healthBarFill.BackgroundColor3 = Color3.new(0, 1, 0)
+        healthBarFill.BorderSizePixel = 0
+        healthBarFill.Parent = healthBar
+
+        -- Raycasting function to check if the player is visible (not behind walls)
+        local function IsVisibleFromCamera(position)
+            local ray = Ray.new(Camera.CFrame.Position, (position - Camera.CFrame.Position).unit * (position - Camera.CFrame.Position).Magnitude)
+            local hitPart = workspace:FindPartOnRay(ray, character)
+            return hitPart == nil -- True if nothing is hit, meaning the view is not obstructed
+        end
+
+        -- Function to cycle RGB colors for box
+        local function GetRGBColor(time)
+            local r = math.abs(math.sin(time * 0.5))
+            local g = math.abs(math.sin(time * 0.7))
+            local b = math.abs(math.sin(time * 0.9))
+            return Color3.new(r, g, b)
+        end
+
+        -- Update Name Tag, Tracer, Health Bar, and 3D Box
+        local function UpdateNameTagAndTracer()
+            if character and character:FindFirstChild("HumanoidRootPart") then
+                local humanoid = character:FindFirstChildOfClass("Humanoid")
+                local rootPart = character.HumanoidRootPart
+
+                -- Update name, health, and distance
+                local health = humanoid and math.floor(humanoid.Health) or 0
+                local maxHealth = humanoid and humanoid.MaxHealth or 100
+                local distance = (Camera.CFrame.Position - rootPart.Position).Magnitude
+                text.Text = string.format("Name: %s | Health: %d | Distance: %d", player.Name, health, math.floor(distance))
+
+                -- Update health bar size based on health percentage
+                healthBarFill.Size = UDim2.new(health / maxHealth, 0, 1, 0)
+
+                -- Update tracer
+                local screenPosition, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
+                if onScreen then
+                    tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+                    tracer.To = Vector2.new(screenPosition.X, screenPosition.Y)
+                    tracer.Visible = true
+                    tracer.Color = player.Team and player.Team.TeamColor.Color or Color3.new(1, 1, 1)
+
+                    -- Update the box color to cycle through RGB
+                    box.Color3 = GetRGBColor(tick())
+
+                    -- Only make the box visible if the character is on screen and not obstructed by walls
+                    if IsVisibleFromCamera(rootPart.Position) then
+                        box.Visible = true
+                    else
+                        box.Visible = false
+                    end
+                else
+                    tracer.Visible = false
+                    box.Visible = false
+                end
+            else
+                tracer.Visible = false
+                box.Visible = false
+            end
+        end
+
+        -- Connect RenderStepped to update Name Tag, Tracer, Health Bar, and Box
+        local updateConnection = RunService.RenderStepped:Connect(UpdateNameTagAndTracer)
+
+        -- Clean up when character dies
+        character:WaitForChild("Humanoid").Died:Connect(function()
+            tracer.Visible = false
+            updateConnection:Disconnect()
+            box:Destroy()
+            healthBar:Destroy()
+        end)
+    end
+
+    -- Handle existing character and future ones
+    if player.Character then
+        OnCharacterAdded(player.Character)
+    end
+    player.CharacterAdded:Connect(OnCharacterAdded)
+end
+
+-- Initialize for all current players
+for _, player in ipairs(Players:GetPlayers()) do
+    if player ~= Players.LocalPlayer then
+        CreateTagAndTracer(player)
+    end
+end
+
+-- Listen for new players joining
+Players.PlayerAdded:Connect(function(player)
+    if player ~= Players.LocalPlayer then
+        CreateTagAndTracer(player)
+    end
+end)
+
+-- AimBot Logic (New Addition)
+local function AimAtTarget()
+    -- Check if the left mouse button (LMB) is held
+    if not UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
+        return -- Exit if LMB is not held
+    end
+
+    -- Get the closest enemy player
+    local closestPlayer = nil
+    local closestDistance = math.huge
+
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= Players.LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            -- Team check: only aim at players not on the same team
+            if player.Team ~= Players.LocalPlayer.Team then
+                local distance = (Camera.CFrame.Position - player.Character.HumanoidRootPart.Position).Magnitude
+                if distance < closestDistance then
+                    closestDistance = distance
+                    closestPlayer = player
+                end
+            end
+        end
+    end
+
+    -- Aim at the closest player (Head or HumanoidRootPart)
+    if closestPlayer then
+        local targetPart = closestPlayer.Character:FindFirstChild("Head") or closestPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if targetPart then
+            local direction = (targetPart.Position - Camera.CFrame.Position).unit
+            local newCFrame = CFrame.new(Camera.CFrame.Position, Camera.CFrame.Position + direction)
+            Camera.CFrame = newCFrame
+        end
+    end
+end
+
+-- Connect AimBot to RenderStepped (aims at the closest target each frame)
+RunService.RenderStepped:Connect(function()
+    AimAtTarget()
+end)
