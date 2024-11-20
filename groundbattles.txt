@@ -9,7 +9,7 @@ local DamageEvent = ACS_Engine:WaitForChild("Events", 9e9):WaitForChild("Damage"
 
 -- Constants
 local ORIGIN = Vector3.new(-63.63491439819336, 91.27510070800781, 1086.3289794921875)
-local WEAPON_NAME = "AWM" -- Default weapon
+local WEAPON_NAME = "" -- Default weapon
 local BULLET_ID_PREFIX = "unique_bullet_id_"
 
 -- Template for args
@@ -134,25 +134,59 @@ local function explodeAllPlayers()
     end
 end
 
--- Boolean flag for spam explode toggle
-local spamExplodeActive = false
+local function explodeSpecificPlayer(username)
+    -- Find the player by username
+    local targetPlayer = nil
+    for _, player in pairs(Players:GetPlayers()) do
+        if player.Name:lower() == username:lower() then
+            targetPlayer = player
+            break
+        end
+    end
 
--- Function to toggle the Spam Explode loop
-local function toggleSpamExplode()
-    spamExplodeActive = not spamExplodeActive
-    if spamExplodeActive then
-        spamExplodeButton.Text = "Spam Explode On"
-        -- Start the spam explode loop
-        task.spawn(function()
-            while spamExplodeActive do
-                explodeAllPlayers()
-                wait(0.5) -- Delay between each explosion (adjust as needed)
-            end
-        end)
+    -- If the player is found
+    if targetPlayer and targetPlayer.Character then
+        local character = targetPlayer.Character
+        local rootPart = character:FindFirstChild("HumanoidRootPart")
+        
+        -- Ensure we found the HumanoidRootPart
+        if rootPart then
+            -- Prepare the base arguments for the explosion event
+            local baseArgs = {
+                [1] = rootPart.Position,  -- The player's position as the explosion origin
+                [2] = {
+                    ["shellName"] = "RpgShell",
+                    ["origin"] = rootPart.Position,  -- Use the player's position for the explosion
+                    ["weaponName"] = "RPG-7",
+                    ["bulletID"] = "Blakneycurse73532812071732099069.311317553374",
+                    ["currentPenetrationCount"] = 0,
+                    ["shellSpeed"] = 400,
+                    ["localShellName"] = "RpgShell",
+                    ["maxPenetrationCount"] = 3,
+                    ["penetrationMultiplier"] = 0.8,
+                    ["shellType"] = "Explosive",
+                    ["shellMaxDist"] = 7000,
+                    ["filterDescendants"] = {
+                        Players.LocalPlayer.Character,
+                        Workspace.CurrentCamera.Viewmodel
+                    }
+                }
+            }
+
+            -- Fire the ExplosionFX event with the updated arguments
+            ACS_Engine.Events.ExplosionFX:FireServer(unpack(baseArgs))
+
+            print("Explosion triggered for " .. targetPlayer.Name)
+        else
+            print("Could not find HumanoidRootPart for " .. targetPlayer.Name)
+        end
     else
-        spamExplodeButton.Text = "Spam Explode Off"
+        -- Player not found or no character available
+        print("Player with username " .. username .. " not found.")
     end
 end
+
+
 
 -- GUI Setup
 local screenGui = Instance.new("ScreenGui")
@@ -160,7 +194,7 @@ screenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
 
 -- Create a draggable frame
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 250, 0, 180)  -- Adjusted to match button height
+frame.Size = UDim2.new(0, 250, 0, 210)  -- Adjusted to match button height
 frame.Position = UDim2.new(0.5, -125, 0.5, -90)  -- Centered better
 frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 frame.BorderSizePixel = 0
@@ -205,21 +239,37 @@ explodeAllButton.Font = Enum.Font.GothamBold
 explodeAllButton.TextSize = 14
 explodeAllButton.Parent = frame
 
--- Spam explode button
-local spamExplodeButton = Instance.new("TextButton")
-spamExplodeButton.Size = UDim2.new(1, -20, 0, 30)  -- Full width with padding
-spamExplodeButton.Position = UDim2.new(0, 10, 0, 130)  -- Adjust position below the explode button
-spamExplodeButton.Text = "Spam Explode Off"
-spamExplodeButton.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
-spamExplodeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-spamExplodeButton.Font = Enum.Font.GothamBold
-spamExplodeButton.TextSize = 14
-spamExplodeButton.Parent = frame
+local usernameTextBox = Instance.new("TextBox")
+usernameTextBox.Size = UDim2.new(1, -20, 0, 30)
+usernameTextBox.Position = UDim2.new(0, 10, 0, 130)
+usernameTextBox.PlaceholderText = "Enter Username to Explode"
+usernameTextBox.Text = ""
+usernameTextBox.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+usernameTextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+usernameTextBox.Font = Enum.Font.GothamBold
+usernameTextBox.TextSize = 14
+usernameTextBox.Parent = frame
+
+local explodeButton = Instance.new("TextButton")
+explodeButton.Size = UDim2.new(1, -20, 0, 30)
+explodeButton.Position = UDim2.new(0, 10, 0, 170)
+explodeButton.Text = "Explode Specific Player"
+explodeButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+explodeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+explodeButton.Font = Enum.Font.GothamBold
+explodeButton.TextSize = 14
+explodeButton.Parent = frame
+explodeButton.MouseButton1Click:Connect(function()
+    local username = usernameTextBox.Text
+    if username ~= "" then
+        explodeSpecificPlayer(username)
+    end
+end)
 
 -- Connect button events
 killAllButton.MouseButton1Click:Connect(processAllPlayersAsync)
 explodeAllButton.MouseButton1Click:Connect(explodeAllPlayers)
-spamExplodeButton.MouseButton1Click:Connect(toggleSpamExplode)
+
 
 -- Draggable functionality for both mouse and touch
 local dragging = false
