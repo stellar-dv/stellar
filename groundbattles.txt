@@ -1,0 +1,263 @@
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+local RunService = game:GetService("RunService")
+
+-- References
+local ACS_Engine = ReplicatedStorage:WaitForChild("ACS_Engine", 9e9)
+local DamageEvent = ACS_Engine:WaitForChild("Events", 9e9):WaitForChild("Damage", 9e9)
+
+-- Constants
+local ORIGIN = Vector3.new(-63.63491439819336, 91.27510070800781, 1086.3289794921875)
+local WEAPON_NAME = "AWM" -- Default weapon
+local BULLET_ID_PREFIX = "unique_bullet_id_"
+
+-- Template for args
+local argsTemplate = {
+    [1] = {
+        origin = ORIGIN,
+        weaponName = WEAPON_NAME,
+        bulletID = nil, -- Set dynamically
+        currentPenetrationCount = 3,
+        shellSpeed = 1500,
+        localShellName = "RpgShell",
+        maxPenetrationCount = 3,
+        registeredParts = {}, -- Set dynamically
+        penetrationMultiplier = 0.8,
+        shellType = "Explosive",
+        shellMaxDist = 7000,
+        filterDescendants = {},
+    },
+    [2] = nil, -- Humanoid
+    [3] = 12.949637413024902, -- Distance
+    [4] = 1, -- Additional parameter
+    [5] = nil, -- Head
+    [6] = 1 -- Additional parameter
+}
+
+-- Function to get target data
+local function getTargetData(character)
+    local humanoid = character:FindFirstChild("Humanoid")
+    local upperTorso = character:FindFirstChild("UpperTorso")
+    local head = character:FindFirstChild("Head")
+    local rightUpperArm = character:FindFirstChild("RightUpperArm")
+
+    if humanoid and upperTorso and head then
+        return humanoid, head, {
+            [upperTorso] = true,
+            [head] = true,
+            [rightUpperArm] = rightUpperArm or nil -- Optional body part
+        }
+    end
+end
+
+-- Function to handle targeting logic
+local function handleTarget(character)
+    local humanoid, head, registeredParts = getTargetData(character)
+    if not humanoid then return end -- Skip if invalid character
+
+    -- Set dynamic values for args
+    argsTemplate[1].bulletID = BULLET_ID_PREFIX .. tostring(math.random()) -- Unique bullet ID
+    argsTemplate[1].registeredParts = registeredParts
+    argsTemplate[2] = humanoid
+    argsTemplate[5] = head
+    argsTemplate[1].filterDescendants = {
+        Players.LocalPlayer.Character, -- Exclude local player
+        Workspace.CurrentCamera.Viewmodel -- Exclude viewmodel
+    }
+
+    -- Invoke the damage event
+    DamageEvent:InvokeServer(unpack(argsTemplate))
+end
+
+-- Function to process all players asynchronously
+local function processAllPlayersAsync()
+    -- Process Players Service
+    local players = Players:GetPlayers()
+    for i = 1, #players do
+        local player = players[i]
+        if player.Character then
+            task.spawn(function()
+                handleTarget(player.Character)
+            end)
+        end
+    end
+
+    -- Process Players Folder (FPlayers)
+    local playersFolder = Workspace:FindFirstChild("FPlayers")
+    if playersFolder then
+        local playerModels = playersFolder:GetChildren()
+        for i = 1, #playerModels do
+            task.spawn(function()
+                handleTarget(playerModels[i])
+            end)
+        end
+    end
+end
+
+-- Function to explode all players at their position
+local function explodeAllPlayers()
+    local baseArgs = {
+        [1] = Vector3.new(0, 0, 0),  -- Placeholder for player's position
+        [2] = {
+            ["shellName"] = "RpgShell",
+            ["origin"] = Vector3.new(0, 0, 0),  -- Placeholder for explosion origin
+            ["weaponName"] = "RPG-7",
+            ["bulletID"] = "Blakneycurse73532812071732099069.311317553374",
+            ["currentPenetrationCount"] = 0,
+            ["shellSpeed"] = 400,
+            ["localShellName"] = "RpgShell",
+            ["maxPenetrationCount"] = 3,
+            ["penetrationMultiplier"] = 0.8,
+            ["shellType"] = "Explosive",
+            ["shellMaxDist"] = 7000,
+            ["filterDescendants"] = {
+                Players.LocalPlayer.Character,
+                Workspace.CurrentCamera.Viewmodel
+            }
+        }
+    }
+
+    local players = Players:GetPlayers()
+    for _, player in pairs(players) do
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local rootPart = player.Character.HumanoidRootPart
+            local playerPosition = rootPart.Position  -- Get the player's position
+
+            -- Update args with the player's position for the explosion origin
+            baseArgs[1] = playerPosition  -- Set the explosion origin to the player's position
+            baseArgs[2].origin = playerPosition  -- Update the origin in the second argument as well
+
+            -- Fire the ExplosionFX event with the updated args
+            ACS_Engine.Events.ExplosionFX:FireServer(unpack(baseArgs))
+        end
+    end
+end
+
+-- Boolean flag for spam explode toggle
+local spamExplodeActive = false
+
+-- Function to toggle the Spam Explode loop
+local function toggleSpamExplode()
+    spamExplodeActive = not spamExplodeActive
+    if spamExplodeActive then
+        spamExplodeButton.Text = "Spam Explode On"
+        -- Start the spam explode loop
+        task.spawn(function()
+            while spamExplodeActive do
+                explodeAllPlayers()
+                wait(0.5) -- Delay between each explosion (adjust as needed)
+            end
+        end)
+    else
+        spamExplodeButton.Text = "Spam Explode Off"
+    end
+end
+
+-- GUI Setup
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+
+-- Create a draggable frame
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 250, 0, 180)  -- Adjusted to match button height
+frame.Position = UDim2.new(0.5, -125, 0.5, -90)  -- Centered better
+frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+frame.BorderSizePixel = 0
+frame.Parent = screenGui
+
+-- Rounded corners for the frame
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 12)
+corner.Parent = frame
+
+-- Weapon name input box
+local weaponTextBox = Instance.new("TextBox")
+weaponTextBox.Size = UDim2.new(1, -20, 0, 30)  -- Take up the full width minus some padding
+weaponTextBox.Position = UDim2.new(0, 10, 0, 10)  -- Add padding from the top
+weaponTextBox.PlaceholderText = "Enter Weapon Name"
+weaponTextBox.Text = WEAPON_NAME
+weaponTextBox.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+weaponTextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+weaponTextBox.Font = Enum.Font.GothamBold
+weaponTextBox.TextSize = 14
+weaponTextBox.Parent = frame
+
+-- Kill all button
+local killAllButton = Instance.new("TextButton")
+killAllButton.Size = UDim2.new(1, -20, 0, 30)  -- Full width with padding
+killAllButton.Position = UDim2.new(0, 10, 0, 50)  -- Adjust position below the textbox
+killAllButton.Text = "Kill Lobby"
+killAllButton.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+killAllButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+killAllButton.Font = Enum.Font.GothamBold
+killAllButton.TextSize = 14
+killAllButton.Parent = frame
+
+-- Explode all button
+local explodeAllButton = Instance.new("TextButton")
+explodeAllButton.Size = UDim2.new(1, -20, 0, 30)  -- Full width with padding
+explodeAllButton.Position = UDim2.new(0, 10, 0, 90)  -- Adjust position below the kill button
+explodeAllButton.Text = "Explode All"
+explodeAllButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+explodeAllButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+explodeAllButton.Font = Enum.Font.GothamBold
+explodeAllButton.TextSize = 14
+explodeAllButton.Parent = frame
+
+-- Spam explode button
+local spamExplodeButton = Instance.new("TextButton")
+spamExplodeButton.Size = UDim2.new(1, -20, 0, 30)  -- Full width with padding
+spamExplodeButton.Position = UDim2.new(0, 10, 0, 130)  -- Adjust position below the explode button
+spamExplodeButton.Text = "Spam Explode Off"
+spamExplodeButton.BackgroundColor3 = Color3.fromRGB(255, 165, 0)
+spamExplodeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+spamExplodeButton.Font = Enum.Font.GothamBold
+spamExplodeButton.TextSize = 14
+spamExplodeButton.Parent = frame
+
+-- Connect button events
+killAllButton.MouseButton1Click:Connect(processAllPlayersAsync)
+explodeAllButton.MouseButton1Click:Connect(explodeAllPlayers)
+spamExplodeButton.MouseButton1Click:Connect(toggleSpamExplode)
+
+-- Draggable functionality for both mouse and touch
+local dragging = false
+local dragInput, dragStart, startPos
+
+local function updateDrag(input)
+    local delta = input.Position - dragStart
+    frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+local function onInputBegan(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = frame.Position
+        input.Consumed = true
+    end
+end
+
+local function onInputChanged(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        updateDrag(input)
+    end
+end
+
+local function onInputEnded(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = false
+    end
+end
+
+-- Connect input events for both mouse and touch
+frame.InputBegan:Connect(onInputBegan)
+frame.InputChanged:Connect(onInputChanged)
+frame.InputEnded:Connect(onInputEnded)
+
+-- Update weapon name when the textbox value changes
+weaponTextBox.FocusLost:Connect(function()
+    WEAPON_NAME = weaponTextBox.Text
+    argsTemplate[1].weaponName = WEAPON_NAME -- Update the weapon name in the args template
+end)
