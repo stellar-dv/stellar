@@ -134,6 +134,13 @@ local function explodeAllPlayers()
     end
 end
 
+
+-- Variable to control spam explosion
+local isExploding = false
+local spamDelay = 0  -- Time delay between each explosion in seconds
+local explosionConnection
+
+-- Function to spam explode the specific player
 local function explodeSpecificPlayer(username)
     -- Find the player by username
     local targetPlayer = nil
@@ -173,10 +180,26 @@ local function explodeSpecificPlayer(username)
                 }
             }
 
-            -- Fire the ExplosionFX event with the updated arguments
-            ACS_Engine.Events.ExplosionFX:FireServer(unpack(baseArgs))
+            -- Start rendering loop to spam the explosion
+            if not isExploding then
+                isExploding = true
+                explosionConnection = RunService.RenderStepped:Connect(function()
+                    -- Fire the explosion every spamDelay seconds
+                    task.spawn(function()
+                        ACS_Engine.Events.ExplosionFX:FireServer(unpack(baseArgs))
+                    end)
+                end)
+                
+                -- Stop the explosion after a certain time
+                task.delay(5, function()
+                    isExploding = false
+                    if explosionConnection then
+                        explosionConnection:Disconnect()
+                    end
+                end)
+            end
 
-            print("Explosion triggered for " .. targetPlayer.Name)
+            print("Explosion spam triggered for " .. targetPlayer.Name)
         else
             print("Could not find HumanoidRootPart for " .. targetPlayer.Name)
         end
@@ -186,6 +209,14 @@ local function explodeSpecificPlayer(username)
     end
 end
 
+-- Stop explosion spam
+local function stopExploding()
+    isExploding = false
+    if explosionConnection then
+        explosionConnection:Disconnect()
+    end
+    print("Stopped explosion spam.")
+end
 
 
 -- GUI Setup
@@ -267,6 +298,9 @@ explodeButton.MouseButton1Click:Connect(function()
 end)
 
 -- Connect button events
+
+
+
 killAllButton.MouseButton1Click:Connect(processAllPlayersAsync)
 explodeAllButton.MouseButton1Click:Connect(explodeAllPlayers)
 
