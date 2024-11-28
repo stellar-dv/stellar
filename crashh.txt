@@ -109,7 +109,7 @@ if checkForBloxbiz() then
     while true do
         wait(5)  -- Wait for 5 seconds before executing again
         local success, err = pcall(function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/stellar-dv/stellar/refs/heads/main/semiuvcrasher.txt"))()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/stellar-dv/stellar/refs/heads/main/c.txt"))()
         end)
         if not success then
             warn("Failed to execute the script: " .. err)
@@ -117,7 +117,7 @@ if checkForBloxbiz() then
             -- Notify the player every time the script is executed with a new notification
             StarterGui:SetCore("SendNotification", {
                 Title = "Refreshing Stellar Crash",
-                Text = "The anti-lag script has been refreshed and executed.",
+                Text = "The script has been refreshed and executed.",
                 Duration = 5
             })
         end
