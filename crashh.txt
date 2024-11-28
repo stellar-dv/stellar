@@ -18,7 +18,7 @@ fpsLabel.TextSize = 20
 fpsLabel.Text = "FPS: 0"
 
 -- Function to check if the game contains "Bloxbiz"
-local function isGameSupported()
+local function checkForBloxbiz()
     for _, item in ipairs(ReplicatedStorage:GetDescendants()) do
         if item.Name:lower():find("bloxbiz") then
             return true
@@ -28,7 +28,7 @@ local function isGameSupported()
 end
 
 -- Notify whether the game is supported
-if isGameSupported() then
+if checkForBloxbiz() then
     StarterGui:SetCore("SendNotification", {
         Title = "Game Supported",
         Text = "This game is supported. Stellar Crash is initializing...",
