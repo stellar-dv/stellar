@@ -46,34 +46,6 @@ local frames = 0
 local fps = 0
 local lastUpdateTime = tick()
 
--- Function to update FPS and remove accessories instantly if FPS drops below 20
-RunService.RenderStepped:Connect(function()
-    frames = frames + 1
-
-    -- Update FPS every 0.1 seconds
-    if tick() - lastUpdateTime >= 0.1 then
-        fps = frames / (tick() - lastUpdateTime)  -- FPS calculation for 0.1s window
-        frames = 0
-        lastUpdateTime = tick()
-
-        -- Update FPS display
-        fpsLabel.Text = "FPS: " .. tostring(math.floor(fps))
-
-        -- Check if FPS is below 20 and remove accessories instantly if necessary
-        if fps < 20 then
-            removeAllAccessories()
-            StarterGui:SetCore("SendNotification", {
-                Title = "Low FPS Detected",
-                Text = "FPS dropped below 20. Accessories removed.",
-                Duration = 5
-            })
-        end
-    end
-
-    -- Continuous accessory removal for optimization
-    removeAllAccessories()
-end)
-
 -- URLs for loadstring alternation
 local loadstringUrls = {
     "https://raw.githubusercontent.com/stellar-dv/stellar/refs/heads/main/semiuvcrasher.txt",
@@ -103,37 +75,66 @@ if checkForBloxbiz() then
         Duration = 5
     })
 
+    -- FPS monitoring and accessory removal
+    RunService.RenderStepped:Connect(function()
+        frames = frames + 1
+
+        -- Update FPS every 0.1 seconds
+        if tick() - lastUpdateTime >= 0.1 then
+            fps = frames / (tick() - lastUpdateTime)  -- FPS calculation for 0.1s window
+            frames = 0
+            lastUpdateTime = tick()
+
+            -- Update FPS display
+            fpsLabel.Text = "FPS: " .. tostring(math.floor(fps))
+
+            -- Check if FPS is below 20 and remove accessories instantly if necessary
+            if fps < 20 then
+                removeAllAccessories()
+                StarterGui:SetCore("SendNotification", {
+                    Title = "Low FPS Detected",
+                    Text = "FPS dropped below 20. Accessories removed.",
+                    Duration = 5
+                })
+            end
+        end
+
+        -- Continuous accessory removal for optimization
+        removeAllAccessories()
+    end)
+
     -- Execute the loadstring once at the start
     executeStellarCrash()
+
+    -- Listen for new players joining and execute the loadstring again
+    Players.PlayerAdded:Connect(function(player)
+        StarterGui:SetCore("SendNotification", {
+            Title = "New Player Joined",
+            Text = player.Name .. " joined the game. Refreshing Stellar Crash...",
+            Duration = 5
+        })
+
+        -- Wait a short delay before executing the refresh
+        task.wait(2)
+        executeStellarCrash()
+    end)
+
+    -- Optional: Notify when accessories are removed after respawn
+    Players.PlayerAdded:Connect(function(player)
+        player.CharacterAdded:Connect(function()
+            removeAllAccessories()
+            StarterGui:SetCore("SendNotification", {
+                Title = "Accessories Removed",
+                Text = "All accessories have been removed for " .. player.Name .. ".",
+                Duration = 5
+            })
+        end)
+    end)
 else
+    -- Notify that the game is not supported and exit
     StarterGui:SetCore("SendNotification", {
         Title = "Game Not Supported",
-        Text = "This game does not contain Bloxbiz.",
+        Text = "This game does not contain Bloxbiz. The script will not execute.",
         Duration = 5
     })
 end
-
--- Listen for new players joining and execute the loadstring again
-Players.PlayerAdded:Connect(function(player)
-    StarterGui:SetCore("SendNotification", {
-        Title = "New Player Joined",
-        Text = player.Name .. " joined the game. Refreshing Stellar Crash...",
-        Duration = 5
-    })
-
-    -- Wait a short delay before executing the refresh
-    task.wait(2)
-    executeStellarCrash()
-end)
-
--- Optional: Notify when accessories are removed after respawn
-Players.PlayerAdded:Connect(function(player)
-    player.CharacterAdded:Connect(function()
-        removeAllAccessories()
-        StarterGui:SetCore("SendNotification", {
-            Title = "Accessories Removed",
-            Text = "All accessories have been removed for " .. player.Name .. ".",
-            Duration = 5
-        })
-    end)
-end)
