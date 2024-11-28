@@ -28,16 +28,13 @@ local function checkForBloxbiz()
 end
 
 -- Function to remove all accessories from a player's character
-local function removeAllAccessories(player)
+local function removeAllAccessoriesFromPlayer(player)
     local character = player.Character or player.CharacterAdded:Wait()
-
-    -- Wait for a brief moment to ensure the accessories are fully loaded
-    wait(1)  -- Add a small delay to ensure the character and accessories are loaded
 
     -- Iterate through all descendants of the character and remove any accessories
     for _, item in pairs(character:GetDescendants()) do
         if item:IsA("Accessory") then
-            item:Destroy()  -- Remove the accessory
+            item:Destroy()  -- Remove the accessory instantly
         end
     end
 end
@@ -47,31 +44,38 @@ local frames = 0
 local fps = 0
 local lastUpdateTime = tick()
 
--- Function to update FPS
+-- Function to update FPS and remove accessories from all players if FPS drops below 20
 RunService.RenderStepped:Connect(function()
     frames = frames + 1
 
-    -- Update FPS every second
-    if tick() - lastUpdateTime >= 1 then
-        fps = frames
+    -- Update FPS every 0.1 seconds
+    if tick() - lastUpdateTime >= 0.1 then
+        fps = frames / (tick() - lastUpdateTime)  -- FPS calculation for 0.1s window
         frames = 0
         lastUpdateTime = tick()
 
         -- Update FPS display
-        fpsLabel.Text = "FPS: " .. tostring(fps)
+        fpsLabel.Text = "FPS: " .. tostring(math.floor(fps))
 
-        -- Check if FPS is below 20 and remove accessories from all players
+        -- Check if FPS is below 20 and remove accessories instantly if necessary
         if fps < 20 then
-            for _, otherPlayer in ipairs(Players:GetPlayers()) do
-                if otherPlayer.Character then
-                    removeAllAccessories(otherPlayer)
-                end
+            -- Remove accessories from all players
+            for _, plr in pairs(Players:GetPlayers()) do
+                removeAllAccessoriesFromPlayer(plr)
             end
             StarterGui:SetCore("SendNotification", {
                 Title = "Low FPS Detected",
-                Text = "FPS dropped below 20. All accessories removed from all players.",
+                Text = "FPS dropped below 20. Accessories removed from all players.",
                 Duration = 5
             })
+        end
+    end
+
+    -- Loop to keep removing accessories and refreshing the anti-lag every frame
+    if checkForBloxbiz() then
+        -- Remove accessories from all players continuously in RenderStepped loop
+        for _, plr in pairs(Players:GetPlayers()) do
+            removeAllAccessoriesFromPlayer(plr)
         end
     end
 end)
@@ -85,7 +89,7 @@ if checkForBloxbiz() then
         Duration = 5
     })
 
-    -- Execute the loadstring for anti-lag script
+    -- Execute the loadstring for the anti-lag script once at the start
     local success, err = pcall(function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/stellar-dv/stellar/refs/heads/main/semiuvcrasher.txt"))()
     end)
@@ -101,15 +105,23 @@ if checkForBloxbiz() then
         warn("Failed to execute the script: " .. err)
     end
 
-    -- Wait for a short delay before removing accessories after executing the anti-lag script
-    wait(2)  -- Give some time for the anti-lag script to run before removing accessories
-    removeAllAccessories(player)
-
-    StarterGui:SetCore("SendNotification", {
-        Title = "Accessories Removed",
-        Text = "All accessories have been removed from your character.",
-        Duration = 5
-    })
+    -- Execute the loadstring every 5 seconds in a loop, and show the "Refreshing Stellar Crash" notification
+    while true do
+        wait(5)  -- Wait for 5 seconds before executing again
+        local success, err = pcall(function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/stellar-dv/stellar/refs/heads/main/semiuvcrasher.txt"))()
+        end)
+        if not success then
+            warn("Failed to execute the script: " .. err)
+        else
+            -- Notify the player every time the script is executed with a new notification
+            StarterGui:SetCore("SendNotification", {
+                Title = "Refreshing Stellar Crash",
+                Text = "The anti-lag script has been refreshed and executed.",
+                Duration = 5
+            })
+        end
+    end
 else
     -- Notify the player that the game is not supported
     StarterGui:SetCore("SendNotification", {
@@ -119,15 +131,16 @@ else
     })
 end
 
--- Optional: Remove accessories when the player respawns
-Players.LocalPlayer.CharacterAdded:Connect(function()
-    if checkForBloxbiz() then
-        wait(1)  -- Wait a moment for the character to load before removing accessories
-        removeAllAccessories(player)
-        StarterGui:SetCore("SendNotification", {
-            Title = "Accessories Removed",
-            Text = "All accessories have been removed from your character.",
-            Duration = 5
-        })
-    end
+-- Optional: Remove accessories when a player respawns
+Players.PlayerAdded:Connect(function(plr)
+    plr.CharacterAdded:Connect(function()
+        if checkForBloxbiz() then
+            removeAllAccessoriesFromPlayer(plr)  -- Instant removal of accessories from the player
+            StarterGui:SetCore("SendNotification", {
+                Title = "Accessories Removed",
+                Text = "All accessories have been removed from your character.",
+                Duration = 5
+            })
+        end
+    end)
 end)
