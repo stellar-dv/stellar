@@ -1,0 +1,105 @@
+-- Function to bypass text based on selected method
+function bypasstext(text, method)
+    if method == 1 then
+        local function addAccents(word)
+            local accents = {
+                a = "ǎ", b = "ḃ", c = "ć", d = "d́", e = "ě", f = "ḟ",
+                g = "ġ", h = "ḣ", i = "í", j = "j́", k = "ḱ", l = "ĺ",
+                m = "ḿ", n = "n̋", o = "ō", p = "ṕ", q = "q́", r = "ŕ",
+                s = "ś", t = "t̋", u = "ū", v = "v̇", w = "ẃ", x = "x́",
+                y = "ý", z = "ź", A = "Ǎ", B = "Ḃ", C = "Ć", D = "D́",
+                E = "Ě", F = "Ḟ", G = "Ġ", H = "Ḣ", I = "Í", J = "J́",
+                K = "Ḱ", L = "Ĺ", M = "Ḿ", N = "N̋", O = "Ō", P = "Ṕ",
+                Q = "Q́", R = "Ŕ", S = "Ś", T = "T̋", U = "Ū", V = "V̇",
+                W = "Ẃ", X = "X́", Y = "Ý", Z = "Ź"
+            }
+
+            local bypassedWord = ""
+            for i = 1, #word do
+                local letter = word:sub(i, i)
+                if accents[letter] then
+                    bypassedWord = bypassedWord .. accents[letter]
+                else
+                    bypassedWord = bypassedWord .. letter
+                end
+            end
+            return bypassedWord
+        end
+
+        local function bypassString(input)
+            local words = {}
+            for word in string.gmatch(input, "%S+") do
+                table.insert(words, addAccents(word))
+            end
+            return table.concat(words, " ")
+        end
+
+        return bypassString(text)
+    elseif method == 2 then
+        -- Example transformation for method 2
+        local function addAccents2(word)
+            local accents2 = {
+                a = "ạ", b = "ḃ", c = "c", d = "d́", e = "e", f = "ḟ",
+                g = "ġ", h = "ḣ", i = "i", j = "j́", k = "ḳ", l = "ĺ",
+                m = "m", n = "n̋", o = "o", p = "ṕ", q = "q́", r = "ŕ",
+                s = "ṣ", t = "t", u = "ụ", v = "v̇", w = "ẃ", x = "x́",
+                y = "y", z = "z", A = "Ạ", B = "Ḃ", C = "C", D = "D́",
+                E = "E", F = "Ḟ", G = "Ġ", H = "Ḣ", I = "I", J = "J́",
+                K = "Ḱ", L = "Ĺ", M = "M", N = "N", O = "O", P = "Ṕ",
+                Q = "Q́", R = "Ŕ", S = "Ṣ", T = "T", U = "Ụ", V = "V̇",
+                W = "Ẃ", X = "X́", Y = "Y", Z = "Z"
+            }
+
+            local bypassedWord = ""
+            for i = 1, #word do
+                local letter = word:sub(i, i)
+                if accents2[letter] then
+                    bypassedWord = bypassedWord .. accents2[letter]
+                else
+                    bypassedWord = bypassedWord .. letter
+                end
+            end
+            return bypassedWord
+        end
+
+        local function bypassString(input)
+            local words = {}
+            for word in string.gmatch(input, "%S+") do
+                table.insert(words, addAccents2(word))
+            end
+            return table.concat(words, " ")
+        end
+
+        return bypassString(text)
+    end
+    -- You can add more methods if needed (method 3, 4, etc.)
+end
+
+-- Function to handle the sending of modified chat messages
+function chat(msg, method)
+    local modifiedMsg = bypasstext(msg, method)  -- Apply text transformation
+
+    -- Send the modified message using TextChatService
+    local textChatService = game:GetService("TextChatService")
+    if textChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+        textChatService.TextChannels.RBXGeneral:SendAsync(modifiedMsg)
+    else
+        game.ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(modifiedMsg, "All")
+    end
+end
+
+-- Listen for the TextBox input and trigger chat sending
+local TextBox = game:GetService("CoreGui").ExperienceChat.appLayout.chatInputBar.Background.Container.TextContainer.TextBoxContainer.TextBox
+
+-- Create a function that triggers when the player types and presses Enter
+TextBox.FocusLost:Connect(function(enterPressed)
+    if enterPressed then
+        local message = TextBox.Text  -- Get the text the player typed
+        local method = 1  -- Select the method for transformation (1, 2, etc.)
+        
+        chat(message, method)  -- Send the transformed message
+        
+        -- Clear the input box after sending the message
+        TextBox.Text = ""
+    end
+end)
