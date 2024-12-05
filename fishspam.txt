@@ -1,6 +1,16 @@
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local CoreGui = game:GetService("CoreGui")
+local TeleportService = game:GetService("TeleportService")
+
+-- Target game ID
+local targetGameId = 14104248348
+
+-- Check if the player is in the target game
+if game.PlaceId ~= targetGameId then
+    TeleportService:Teleport(targetGameId)
+    return -- Stop executing this script after teleporting
+end
 
 -- Create a GUI for the toggle button
 local screenGui = Instance.new("ScreenGui")
