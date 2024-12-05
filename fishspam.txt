@@ -1,0 +1,60 @@
+local RunService = game:GetService("RunService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local CoreGui = game:GetService("CoreGui")
+
+-- Create a GUI for the toggle button
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "ToggleCreateFish"
+screenGui.Parent = CoreGui
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0.2, 0, 0.1, 0)
+frame.Position = UDim2.new(0.4, 0, 0.4, 0)
+frame.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2)
+frame.Parent = screenGui
+
+local toggleButton = Instance.new("TextButton")
+toggleButton.Text = "Start Loop"
+toggleButton.Size = UDim2.new(1, 0, 1, 0)
+toggleButton.BackgroundColor3 = Color3.new(0.1, 0.6, 0.1)
+toggleButton.TextColor3 = Color3.new(1, 1, 1)
+toggleButton.Font = Enum.Font.SourceSansBold
+toggleButton.TextScaled = true
+toggleButton.Parent = frame
+
+-- Arguments for CreateFish
+local args = {
+    [1] = {
+        ["DefaultArg"] = "Test"
+    }
+}
+
+-- Loop state
+local loopEnabled = false
+
+-- Function to invoke CreateFish
+local function invokeCreateFish()
+    local success, err = pcall(function()
+        ReplicatedStorage.Modules.Weave.Remotes.Function.CreateFish:InvokeServer(unpack(args))
+    end)
+
+    if success then
+        print("CreateFish invoked successfully.")
+    else
+        warn("Error invoking CreateFish: " .. tostring(err))
+    end
+end
+
+-- Toggle loop on button click
+toggleButton.MouseButton1Click:Connect(function()
+    loopEnabled = not loopEnabled
+    toggleButton.Text = loopEnabled and "Stop Loop" or "Start Loop"
+    toggleButton.BackgroundColor3 = loopEnabled and Color3.new(0.6, 0.1, 0.1) or Color3.new(0.1, 0.6, 0.1)
+end)
+
+-- Heartbeat loop
+RunService.Heartbeat:Connect(function()
+    if loopEnabled then
+        invokeCreateFish()
+    end
+end)
